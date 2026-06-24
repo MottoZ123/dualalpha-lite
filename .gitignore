@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and local IDE state
+.venv/
+.venv1/
+venv/
+env/
+.idea/
+.vscode/
+
+# Secrets
+.env
+*.env
+secrets.*
+config.local.*
+
+# Generated model artifacts
+models/*
+!models/.gitkeep
+models_tx/*
+!models_tx/.gitkeep
+models_bs_v6/*
+!models_bs_v6/.gitkeep
+models_tx_v7/*
+!models_tx_v7/.gitkeep
+
+# Generated reports and analysis outputs
+AB_Test_Reports/*
+!AB_Test_Reports/.gitkeep
+factor_reports_v4.3/*
+!factor_reports_v4.3/.gitkeep
+factor_reports_tx_v4.4/*
+!factor_reports_tx_v4.4/.gitkeep
+factor_reports_bs_v6/*
+!factor_reports_bs_v6/.gitkeep
+factor_reports_tx_v7/*
+!factor_reports_tx_v7/.gitkeep
+catboost_info/
+
+# Local data and large files
+data/
+*.pkl
+*.joblib
+*.pth
+*.pt
+*.cbm
+*.jsonl
+*.csv
+*.xlsx
+*.parquet
+
