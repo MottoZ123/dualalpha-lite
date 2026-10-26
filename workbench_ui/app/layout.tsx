@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = /^[a-zA-Z0-9.:[\]-]+$/.test(rawHost) ? rawHost : "localhost:5899";
   const protocol = requestHeaders.get("x-forwarded-proto") === "https" ? "https" : host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
   const origin = `${protocol}://${host}`;
-  const title = "本地工作台 · 双轨量化研究";
+  const title = "股票因子研究工作台 · Stock Factor Workbench";
   const description = "市场全景、条件研判、TX / BS 双轨、因子实验室、训练回测与多市场资料中心。";
   return {
     title,

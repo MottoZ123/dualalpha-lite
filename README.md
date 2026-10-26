@@ -1,96 +1,247 @@
-# 本地工作台
+# 股票因子研究工作台 · Stock Factor Workbench
 
-基于 TX/BS 双轨集成模型的本地量化研究工具，包含行情观察、自选分析、因子研究和可选 AI 解读。
+面向 A 股的本地研究工作台，把市场观察、自选股管理、因子设计、策略研究、历史回测和模型报告放在同一个研究流程中。内置原有 TX / BS 双轨预测系统作为可研究、可修改的示例：TX 侧重价格趋势与形态，BS 侧重量价、成交成本与流动性；用户可以选择内置因子、调整研究组合，或通过安全公式定义新因子。
 
-## 界面效果
+项目由用户原有的因子挖掘、机器学习模型构建与双轨预测系统演进而来，工作台负责组织数据、实验与结果。GitHub 仓库地址继续使用 `dualalpha-lite`，项目展示名称为“股票因子研究工作台”。
 
-以下为本项目实际运行页面截图。来自新建环境，没有导入个人模型、日报或账户；缺失数据按页面状态显示，不代表模型表现。
+## 功能与界面
+
+| 模块 | 可以做什么 | 当前执行范围 |
+|---|---|---|
+| 市场观察 | 查看指数、板块、资金与新闻，检查数据时间和来源 | 本地 API 拉取与缓存行情 |
+| 我的观察 | 管理自选、查看标的和研究线索 | 自选清单与持仓状态分别处理 |
+| 因子研究 | 导入双轨预设、选择因子、保存公式与版本 | 公式因子用于研究回测；原始训练器接受兼容内置因子 |
+| 策略实验 | 设置股票池、因子权重、周期、成本和窗口 | 通过研究函数或启用后的任务 API 执行 |
+| 历史回测 | 查看 IC、Rank IC、分层收益、回撤、滚动样本外结果 | 当前界面读取历史案例，新回测按钮暂未开放 |
+| 模型与报告 | 读取双轨归档、管理模型版本、生成可选 AI 解读 | 预测需要本地权重；AI 解读需要供应商配置 |
 
 ![市场总览](docs/images/market.png)
 
-*市场总览：指数、板块、市场状态与数据来源。*
+*市场页面：指数、板块、分时走势与数据状态。截图来自实际本地运行，保留截图时的“本地工作台”名称。*
 
-![因子研究](docs/images/research.png)
+![因子实验室](docs/images/research.png)
 
-*研究页面：因子方案、双轨研究入口与证据指标。*
+*研究页面：内置因子目录与组合选择。截图未导入个人权重或账户，展示界面功能而非策略收益。*
 
 ## 整体架构
 
 ```mermaid
-flowchart LR
-  Browser[浏览器] -->|5899| UI[workbench_ui<br/>本地界面]
-  UI --> LocalDB[(本地工作区)]
-  Browser -->|8910| API[research_api.py<br/>研究服务]
-  UI -->|白名单转发| API
-  API --> Core[workbench_core<br/>行情 指标 缓存]
-  API --> Research[research_core<br/>配置 归档 工具]
-  Core --> Sources[行情与宏观数据源]
-  Quant[quant<br/>因子 训练 预测 回测] --> Artifacts[(模型和日报)]
+flowchart TB
+  User[研究者] --> UI[本地前端 workbench_ui / 5899]
+  UI --> Workspace[(本机工作区 D1 / R2 模拟存储)]
+  UI --> API[研究接口 research_api / 8910]
+  API --> Market[workbench_core 行情与指标]
+  Market --> Sources[腾讯行情 / 东方财富等数据源]
+  API --> Research[research_core 配置 / 归档 / 模型注册]
+  API --> Jobs[训练与回测任务]
+  Jobs --> Quant[quant 因子 / 训练 / 预测 / 回测]
+  Quant --> History[AKShare 腾讯历史 / BaoStock 历史]
+  Quant --> Artifacts[(权重 / 因子报告 / 实验结果)]
   Research --> Artifacts
-  UI --> LLM[可选 LLM 服务]
-  Research --> LLM
-  MCP[research_mcp_server.py] --> Research
+  Quant --> Daily[(双轨日频归档)]
+  Research --> Daily
+  UI --> LLM[可选 LLM 解释服务]
+  Quant --> LLM
+  MCP[MCP 只读工具] --> Research
 ```
 
-| 目录/入口 | 功能 |
+前端由 React、Vinext/Vite 和本地 Cloudflare 模拟环境提供；Python FastAPI 提供研究接口。市场缓存、研究结果和模型制品各自保存，训练/回测以任务形式运行。前端接口名中的 `cloud` 沿用原命名，本地部署无需云账号。
+
+| 目录或入口 | 功能 |
 |---|---|
-| `quant/` | 原始因子、四套训练、双轨预测和回测。 |
-| `workbench_core/` | 行情适配、指标计算、市场时钟和缓存。 |
-| `research_core/` | 配置、预测归一化、模型服务和只读工具。 |
-| `workbench_ui/` | 界面、模型连接和本地工作区。 |
-| `scripts/` | 安装、启动、停止和监控。 |
-| `tests/` | 后端回归测试。 |
-| `docs/` | 效果图、因子清单和研究方法。 |
-| `research_api.py` | HTTP 研究接口。 |
-| `research_mcp_server.py` | MCP 标准输入输出接口。 |
-| `workbench-config.json` | 标的和刷新配置。 |
+| `workbench_ui/` | 工作台界面与本机工作区 |
+| `workbench_core/` | 行情、指标、时钟与缓存 |
+| `research_core/` | 配置、模型注册、归档与只读工具 |
+| `quant/` | 原始双轨与因子研究算法 |
+| `research_api.py` | HTTP API 与任务入口 |
+| `research_mcp_server.py` | MCP 只读查询入口 |
+| `scripts/` | 安装、启动、停止与监控 |
+| `tests/` | 后端回归测试 |
+| `docs/` | 因子索引与截图 |
 
-### 数据如何流动
+## 从选股到复盘的使用流程
 
-1. 前端从 5899 加载，读取本机工作区，并连接 8910 研究服务。
-2. 后端从缓存或行情源取得数据，计算技术指标；`/api/all` 返回整页数据，`/api/realtime` 返回更新项。
-3. `quant` 中的训练脚本生成模型，每日预测生成日期归档；研究页面读取归档并标明时间。
-4. LLM 接收结构化证据并生成解释，不代替四模型预测。
-5. 训练、主动预测和新回测 API 默认关闭；只有显式开启后才执行相应任务。
+```mermaid
+flowchart LR
+  A[市场观察] --> B[建立候选股票池]
+  B --> C[历史数据预检]
+  C --> D[导入双轨因子或定义公式]
+  D --> E[确定策略与回测参数]
+  E --> F[因子分析与滚动回测]
+  F --> G[检查成本 / 回撤 / 样本外稳定性]
+  G --> H[保存版本与实验结果]
+  H --> I[兼容模型训练与日频预测]
+  I --> J[比较 TX / BS 输出并复盘]
+  J --> D
+```
 
-### 服务和状态
+### 1. 建立候选股票池
 
-| 接口/状态 | 用途 |
+从“市场”查看板块与指数，再在“我的”维护关注标的。选股在这里指**建立研究股票池并比较候选结果**：市场观察、自选管理与模型分数可以提供筛选线索，当前没有一键全市场扫描并自动下单的流程。
+
+进入研究模块后输入六位 A 股代码并做历史数据预检。`POST /api/universe/validate` 接受 1–50 个代码；因子回测至少需要 3 只有足够历史数据的股票，每只至少 120 行。正式横截面研究宜使用更宽的股票池，以免少数样本决定排名。先固定股票池与数据日期，再比较策略，记录退市、停牌、复权和样本选择方式。
+
+### 2. 选择因子或自定义公式
+
+在“研究 → 个人因子组合”导入 TX/BS 预设，在“因子实验室”载入目录并选择因子。导入仅填充选择，不会自动训练或覆盖已有模型。
+
+可从一个简单假设开始：相对强势、趋势延续且波动不过高的股票，未来表现是否更好？例如选择 `Relative_Strength_20`、`Return_20`、`ATR_Ratio_14_60`，再定义：
+
+```text
+Return_20 / (ATR_Ratio_14_60 + 0.00000001)
+```
+
+该公式把 20 日收益与短长波动比结合，用于检验“趋势相对于波动”的解释力。公式支持已计算列、数值常量、括号、加减乘除和乘方；不支持任意 Python、函数调用或自行编写 `rolling()`。新增窗口计算需扩展 Python 因子实现。
+
+因子名称、公式、方向、窗口与版本等信息可保存；具体计算以 `quant/factor_backtest.py` 的执行逻辑为准。元数据字段本身不会自动生成中性化或缺失值处理算法。自定义公式可进入研究回测，不能直接送入原始四模型训练器；将其接入训练还需同步训练和推理的特征定义、顺序与制品。
+
+### 3. 把因子假设写成策略配置
+
+研究配置至少包含股票池、日期、因子集合、标签周期、训练/测试窗口、手续费和滑点。普通 T+1 滚动研究在训练段估计因子方向及权重，在测试段计算横截面标准化分数：
+
+$$S_{i,t}=\sum_j w_j d_j\frac{x_{i,j,t}-\mu_{j,t}}{\sigma_{j,t}}$$
+
+其中 $d_j$ 来自训练期 Rank IC 的符号；权重来自用户输入或训练期绝对 Rank IC，归一化后使用。测试股票按分数排序。该分数是因子组合排序分数，与双轨机器学习输出的 `raw_prob` 不同。
+
+策略比较可以依次做“单因子 → 等权组合 → 训练期确定方向和权重”，固定测试日期，比较加入成本后的增量。更改因子集合应保存新版本，避免用同一段历史反复调参后再称其为独立验证。
+
+### 4. 运行历史回测
+
+页面“训练回测”目前读取已存在的历史案例，执行按钮保持关闭。新实验可在安装完整模型依赖后调用研究函数；以下为**可执行示例配置，不是预先取得的收益结果**。在仓库根目录运行：
+
+```python
+from quant.factor_backtest import run_factor_backtest
+
+result = run_factor_backtest(
+    stocks=["600522", "002335", "000657", "601899"],
+    factors=["Relative_Strength_20", "Return_20", "ATR_Ratio_14_60"],
+    config={
+        "dateFrom": "2021-01-01", "dateTo": "2025-12-31",
+        "labelHorizon": 1, "walkForward": True,
+        "minTrainDays": 252, "testWindowDays": 60,
+        "feeBps": 8, "slippageBps": 5,
+    },
+    output_dir="research-runs/example-01",
+)
+print(result["walkForwardResults"])
+```
+
+示例代码需要网络，`output_dir` 必须是尚不存在的目录。输出包含 `factorMetrics`、`factorRelationships`、`walkForwardResults`、配置与数据指纹，并写入 `factor-metrics.json`。自定义因子通过 `config.customFactorFormulas` 传入名称到公式的映射，并将名称加入 `factors`。
+
+另一条执行路径为任务 API：显式设置 `ENABLE_BACKTEST_API=1`，直接用 Uvicorn 启动后向 `POST /api/jobs` 提交 `mode="backtest"` 的任务，再读取 `/api/jobs/{id}`。常规 `start_backend.ps1` 会强制关闭新回测，因此不能只改 `.env` 后继续使用该启动器。API 至少需要 3 个兼容因子和 3–50 只股票。
+
+### 5. 阅读回测结果
+
+| 指标 | 计算与用途 |
 |---|---|
-| `/api/health` | 进程存活。 |
-| `/api/ready` | 关键行情数据是否就绪。 |
-| `/api/research/dual-track/latest` | 日频双轨归档。 |
-| `/api/research/factor-presets` | 因子预设。 |
-| `/api/jobs` | 受开关控制的研究任务。 |
-| `/api/research/models` | 模型版本与状态。 |
-| 前端 `/api/cloud/workspace` | 本机工作区读写。 |
-| 前端 `/api/cloud/provider/test`、`analysis` | 模型测试与分析。 |
-| 前端 `/api/cloud/rich/context` | 受限后端转发。 |
+| IC | 每日横截面因子值与未来 H 日收益的 Pearson 相关 |
+| Rank IC | 对两者排名后求相关，检验排序能力 |
+| ICIR | 代码按平均 Rank IC / 标准差 × √(252/H) 计算 |
+| 因子相关与边际贡献 | 比较因子重叠，检查移除某因子后的组合 Rank IC 变化 |
+| 成本后收益 | 组合收益扣除换手对应的手续费与滑点 |
+| 最大回撤 | 净值相对于历史峰值的最大下降幅度 |
+| 滚动窗口结果 | 逐窗检查训练终点、测试起点、方向与权重 |
 
-完整请求结构见运行中的 `http://127.0.0.1:8910/docs`。前端的 `cloud` 路径沿用接口命名；存储通过本地 Miniflare 模拟，无需云账号。数据携带来源、时间与降级状态；缓存使用最后可用结果和 ETag，缺失值不伪装为零。`health` 成功不等于行情已经就绪。
+普通因子分层回测使用高分组 50% 多头、低分组 50% 空头：`gross = 0.5 × 多头均值收益 − 0.5 × 空头均值收益`；`net = gross − turnover × (feeBps + slippageBps) / 10000`。它是因子研究组合，尚未实现完整的 A 股借券、成交撮合、涨跌停排队与现金约束。标签使用未来收盘价收益；收盘信号能否以该价格成交需要进一步验证。当前初始建仓换手记为 0，`rebalanceEvery > 1` 会跳过部分日期，不能据此直接宣称完整持有期实盘收益。
 
-## 双轨预测与因子
+`local_tx_bs` 双周期示例采用各轨道因子集、StandardScaler 与逻辑回归，在扩展训练窗口上重新拟合：T+1 统计候选关注命中，T+5 使用非重叠持有期统计假设收益并扣双边成本。它复用了双轨因子思想，**没有重跑下面原始系统的四个基模型**；其结果不能当作原始四模型系统的回测成绩。
 
-| 轨道 | 特征 | 训练模块 |
+### 6. 训练、预测与复盘
+
+因子研究之后，再选择兼容的原始训练路径。主板训练 API 支持每轨至少 3 个兼容内置因子；但现有日频预测仍按固定特征集合加载模型，变更特征子集的候选制品不能直接替换默认模型，需同步推理配置并验证。
+
+日频预测读取权重，生成 TX 和 BS 分数与分歧信息；报告记录日期、股票、模型输出和可选 LLM 解读。复盘时比较数据是否完整、信号是否一致、未来标签是否兑现，把问题反馈到因子与训练环节。LLM 负责解释结构化证据，分数由量化代码计算。
+
+## 内置示例：原有双轨系统如何工作
+
+### 两条数据轨道，四套特征配置
+
+TX 指腾讯历史数据路径，BS 指 BaoStock 路径。每条路径按科技成长与主板使用独立因子集合和制品目录。科技分组由源码股票列表决定，并非自动识别行业；更换股票池时需同步训练与预测清单。
+
+| 路径 | 重点 | 因子数 | 训练模块 | 默认权重目录 |
+|---|---|---:|---|---|
+| 科技 TX | 趋势、形态、资金流 | 13 | `quant.train_tech_tx` | `models_tx` |
+| 科技 BS | 换手、成交成本、量价 | 13 | `quant.train_tech_bs` | `models` |
+| 主板 TX | 纯价格趋势与反转 | 10 | `quant.train_mainboard_tx` | `models_tx_v7` |
+| 主板 BS | 量价、VWAP 与流动性 | 10 | `quant.train_mainboard_bs` | `models_bs_v6` |
+
+完整分组见 [因子清单](docs/FACTOR_CATALOG.md)。主板 TX 不依赖成交量；科技 TX 仍包含量价因子。两条轨道的同向输出表示不同特征视角的一致性，不能理解为统计独立的两次预测。
+
+### 因子计算
+
+记 $C,O,H,L,V,A$ 为收盘、开盘、最高、最低、成交量和成交额，$r$ 为日收益、$r_m$ 为基准日收益；`MA_n`、`EMA_n`、`std_n` 分别为 n 日均值、指数均值与标准差。下表省略代码中防止除零的小量；成交额、成交量与涨跌幅必须先统一单位。
+
+| 因子 | 当前源码的计算 | 研究含义 |
 |---|---|---|
-| TX 科技成长 | 13 项趋势、形态与资金流特征 | `quant.train_tech_tx` |
-| BS 科技成长 | 13 项成本偏离、换手与量价特征 | `quant.train_tech_bs` |
-| TX 主板 | 10 项价格结构与反转特征 | `quant.train_mainboard_tx` |
-| BS 主板 | 10 项 VWAP、资金流与流动性特征 | `quant.train_mainboard_bs` |
+| Relative_Strength | `r − r_m` | 单日相对表现 |
+| Relative_Strength_20 | `C/C[-20] − 1 − sum_20(r_m)` | 20 日相对表现；基准采用求和近似 |
+| Return_5 / Return_20 | `C/C[-n] − 1` | 短中期动量 |
+| BIAS_20 / BIAS_60 | `C/MA_n(C) − 1` | 相对均线的偏离 |
+| Price_EMA_Bias_20 | `C/EMA_20(C) − 1` | 相对平滑趋势的偏离 |
+| MACD_Hist_Norm | `(DIF − EMA_9(DIF))/C`，`DIF=EMA_12(C)−EMA_26(C)` | 归一化趋势变化 |
+| Z_Score_20 | `(C−MA_20(C))/std_20(C)` | 价格偏离程度 |
+| Norm_ATR_14 | `MA_14(TR)/C` | 相对波幅 |
+| ATR_Ratio_14_60 | `MA_14(TR)/MA_60(TR)` | 短长波动状态 |
+| Vol_Ratio / Vol_Surge_60 | `V/MA_20(V)` / `V/MA_60(V)` | 成交活跃程度 |
+| Turn | BaoStock 换手率除以 100 | 换手水平 |
+| Entity_Ratio | `abs(C−O)/(H−L)` | K 线实体占比 |
+| Candle_Shape | `(C−L)/(H−L)` | 收盘在日内区间中的位置 |
+| Boll_Width | `2×std_20(C)/MA_20(C)` | 当前实现的相对波动宽度 |
+| Realized_Vol_20 | `std_20(r)×sqrt(252)` | 年化历史波动 |
+| PV_Corr_10 | `corr_10(C,V)` | 量价相关 |
+| Overnight_Return | `O/C[-1] − 1` | 隔夜跳空 |
+| Price_Cost_Bias | `C/(A/V) − 1` | 相对当日平均成交成本 |
+| Price_VWAP_Bias | `C/(sum_20(A)/sum_20(V)) − 1` | 相对 20 日成交成本 |
+| CMF_20 | `sum_20(CLV×V)/sum_20(V)`，`CLV=(2C−L−H)/(H−L)` | 量加权的收盘位置 |
+| Trend_Strength_20 | `(C−C[-20])/(max_20(H)−min_20(L))` | 区间内趋势推进 |
+| Williams_R_14 | `−100×(max_14(H)−C)/(max_14(H)−min_14(L))` | 价格区间位置 |
+| CCI_14 | `(TP−MA_14(TP))/(0.015×std_14(TP))`，`TP=(H+L+C)/3` | 典型价格偏离 |
+| MFI_14 | `100−100/(1+正向资金流14日和/负向资金流14日和)` | 典型价格上升/下降时的量价流 |
+| Amihud_Illiquidity | `MA_20(abs(r)/(A/1e8))` | 单位成交金额对应的价格变化 |
 
-每条路径使用 XGBoost、LightGBM、CatBoost、Transformer，再由逻辑回归融合输出。`raw_prob` 是模型分数，独立验证和概率校准另行评估。因子见 [因子清单](docs/FACTOR_CATALOG.md)，训练与回测口径见 [研究方法](docs/RESEARCH_METHODS.md)。
+其中 `TR=max(H,C[-1])−min(L,C[-1])`；MFI 的每日资金流为 `TP×V`，由 TP 相对前日的方向归入正向或负向。当前 CCI 使用标准差而非经典平均绝对偏差；Boll_Width 使用 `2σ/MA`。复现时应遵循代码定义，不能直接替换同名第三方指标。
 
-### 量化文件索引
+### 标签、训练与模型融合
 
-| 模块 | 功能 |
-|---|---|
-| `quant/predict_tx.py`、`predict_bs.py` | 双轨日频预测。 |
-| `quant/train_tech_*.py`、`train_mainboard_*.py` | 四套模型训练。 |
-| `quant/report_tx.py`、`report_bs.py` | 轨道报告提示词。 |
-| `quant/daily_report.py` | 每日双轨运行与归档。 |
-| `quant/explain_tx.py`、`explain_bs.py` | 因子解释与 SHAP。 |
-| `quant/backtest_tech.py`、`backtest_mainboard.py` | 原始滚动回测。 |
-| `quant/factor_backtest.py` | 因子计算及双周期研究。 |
+原始标签意图是预测下一交易日是否跑赢基准：
+
+$$y_t=\mathbf{1}(r_{t+1}>r_{m,t+1})$$
+
+它判断相对收益方向，不等于“下一日上涨”。例如股票跌 1%、基准跌 2%，仍符合超额为正的标签。
+
+```mermaid
+flowchart LR
+  Raw[历史日线与基准] --> F[按轨道计算因子]
+  F --> Scale[训练段 StandardScaler]
+  Scale --> Tree[XGBoost / LightGBM / CatBoost]
+  Scale --> Seq[10 日序列 Transformer]
+  Tree --> Meta[时间保留段拟合 LogisticRegression]
+  Seq --> Meta
+  Meta --> Files[保存权重与 scaler]
+  Files --> Predict[日频加载 / 四模型输出]
+  Predict --> Blend[系数绝对值归一化加权]
+  Blend --> TXBS[TX 与 BS 比较 / 报告归档]
+```
+
+按每只股票分别训练。前 80% 时间样本用于标准化与基模型训练，后 20% 用于融合模型；这是时间保留段 stacking。三类树模型处理单日特征，Transformer 使用长度为 10 的序列，线性嵌入到 64 维、4 个注意力头、2 层编码器，末位置输出经 Sigmoid 得到分数。序列与目标的实际对齐仍需按下面实现边界检查。
+
+**训练与日频融合的实现不同。** 训练保存逻辑回归模型，但 `predict_tx.py` / `predict_bs.py` 实际取其四个系数的绝对值归一化，再对四个基模型分数加权：
+
+$$w_k=\frac{|\beta_k|}{\sum_j|\beta_j|+\epsilon},\qquad raw\_prob=\sum_{k=1}^{4}w_kp_k$$
+
+推理没有直接调用逻辑回归的 Sigmoid，也没有使用其截距和系数符号。界面沿用“胜率”字段，实际应按未经独立校准的模型分数解释。双轨日报以 0.53 为旧示例阈值：两轨均达到阈值、仅一轨达到、两轨均未达到分别生成一致或分歧提示。阈值属于研究配置，不是已经验证的交易规则。
+
+### 复现时必须核对的实现边界
+
+以下是阅读当前源码得到的检查项；本次文档更新没有改变原始算法，也未重新训练权重。
+
+- 主板训练将全样本拟合的 scaler 保存，但树模型仍使用此前训练段 scaler 产生的矩阵重拟合；训练与推理变换存在不一致，需要统一后重新训练。
+- 主板 `PctChg` 采用“最大绝对值大于 10 才除以 100”的启发式；腾讯字段缺失时还会填 0。须验证涨跌幅列与基准同为小数收益，否则标签失真。
+- `shift(-1)` 后直接比较再转整数会把无未来标签的末行变为 0；有效训练集应显式排除这类行。
+- Transformer 训练片段 `X[i-10:i]` 对应 `y[i]`，推理却使用截至最新日的 10 行；需要明确目标交易日并统一序列对齐。
+- 因子组合回测通过 AKShare 腾讯历史构建统一面板，其成本/换手字段来源与原始 BaoStock 训练不同；需要检查字段覆盖、单位和代理量，不能假定同名因子逐值一致。
+
+这些问题影响模型复现与结果解释。代码测试验证接口和研究函数的行为，不能替代上述模型数据一致性检查或独立样本外验证。
 
 ## 部署与使用
 
@@ -229,11 +380,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_backend.ps1
 
 默认只监听本机。公网身份认证、HTTPS、远程访问及授权行情订阅不属于此部署方式。
 
-## 结构调整
+## 验证与协作
 
-有效旧源码收进 `quant`，已同步内部导入和 API 调用。重复日报入口、未引用的旧包装与实验脚本从当前版本移除；历史版本保留在 Git。模型、日报和因子报告目录在运行时创建，不再提交空占位。已有本机产物路径和数据库名保留兼容。
-
-## 验证
+上一轮源码整理已通过 43 项后端测试、4 项前端测试和前端构建，市场与因子页面已实际连接后端。此次更新聚焦项目命名与说明，没有产生新的模型收益结论。
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
@@ -242,10 +391,4 @@ pnpm run build
 node --test tests/local-workbench.test.mjs
 ```
 
-本次在新建环境验证安装、43 项后端测试、4 项前端测试、前端构建和页面截图；不重新训练四套模型，不将界面截图或单元测试当作收益验证。原始训练流程依赖完整模型栈。
-
-## 来源与协作
-
-项目维护：[MottoZ123](https://github.com/MottoZ123)；共同开发：[Mary-wym](https://github.com/Mary-wym)。可选 [Vibe-Research](https://github.com/simonlin1212/Vibe-Research) 默认关闭，本仓库仅保留适配器。
-
-第三方依赖见 requirements 文件和前端 package.json。原项目未提供根 LICENSE，本次不代替作者选择许可证。默认本机研究模式不包含券商下单；正式行情授权、未来年度日历与模型有效性需分别维护。
+维护：[MottoZ123](https://github.com/MottoZ123)；共同开发：[Mary-wym](https://github.com/Mary-wym)。可选 [Vibe-Research](https://github.com/simonlin1212/Vibe-Research) 适配默认关闭。依赖见 requirements 文件与前端 package.json；原项目尚未提供根 LICENSE。

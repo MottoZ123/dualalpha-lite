@@ -1,6 +1,6 @@
 # 原始双轨因子清单
 
-从本次发布的 daily_agent_tx.py / daily_agent_bs.py 静态提取，未重新训练或改写因子。
+从本次发布的 quant/predict_tx.py / quant/predict_bs.py 静态提取，未重新训练或改写因子。
 
 | 轨道 | 板块 | 数量 | 特征名 |
 |---|---|---:|---|

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("ships the 本地工作台 product shell and PWA metadata", async () => {
+test("ships the 股票因子工作台 product shell and PWA metadata", async () => {
   const [layout, page, motto, manifest, serviceWorker] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -10,11 +10,11 @@ test("ships the 本地工作台 product shell and PWA metadata", async () => {
     readFile(new URL("../public/manifest.webmanifest", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
   ]);
-  assert.match(layout, /本地工作台 · 双轨量化研究/);
+  assert.match(layout, /股票因子研究工作台 · Stock Factor Workbench/);
   assert.match(layout, /manifest\.webmanifest/);
   assert.match(page, /<LocalWorkbench/);
   for (const group of ["MARKET", "MY DESK", "RESEARCH", "REFERENCE"]) assert.match(motto, new RegExp(group));
-  assert.match(manifest, /本地工作台/);
+  assert.match(manifest, /股票因子工作台/);
   assert.match(serviceWorker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.doesNotMatch(`${layout}\n${page}\n${motto}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });

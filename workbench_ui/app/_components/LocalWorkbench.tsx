@@ -1123,7 +1123,7 @@ export function LocalWorkbench() {
         >
           <span className={styles.brandMark}>研</span>
           <span>
-            <b>本地工作台</b>
+            <b>股票因子工作台</b>
             <small>LOCAL RESEARCH</small>
           </span>
         </button>
