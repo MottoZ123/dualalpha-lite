@@ -1,3 +1,5 @@
+"""科技成长滚动回测。"""
+
 import os
 import time
 import datetime
@@ -16,9 +18,9 @@ import torch.optim as optim
 
 warnings.filterwarnings('ignore')
 
-# ==========================================
-# ⚙️ 核心配置 (海陆空全阵营 - 15只精选标的)
-# ==========================================
+
+#  核心配置 (海陆空全阵营 - 15只精选标的)
+
 # 包含科创板、创业板、主板标的 (已取并集并去重)
 TICKERS_RAW = [
     '688257', '688820', '688002', '688008', '688809', '688387', '688313',  # 科创板
@@ -31,13 +33,13 @@ STEP_SIZE_DAYS = 3
 FRICTION_COST = 0.002
 SEQ_LEN = 10
 
-# 🌟 档位阈值与风控红线
+#  档位阈值与风控红线
 PROB_B = 0.53
 PROB_A = 0.58
 PROB_S = 0.65
 MAX_SINGLE_POS = 0.8  # 单支股票绝对上限 80%
 
-# 🌟 公平测试权重：统一使用 1.3 黄金梯度
+#  公平测试权重：统一使用 1.3 黄金梯度
 BIAS_TX = {"科技成长阵营": 1.3, "主板阵营": 1.3}
 BIAS_BS = {"科技成长阵营": 1.3, "主板阵营": 1.3}
 
@@ -55,12 +57,12 @@ FEATURE_COLS_BS = [
 ]
 
 def get_sector(code):
-    # 🌟 智能识别阵营
+    #  智能识别阵营
     return "科技成长阵营" if code.startswith('688') or code.startswith('300') else "主板阵营"
 
-# ==========================================
-# 📈 核心逻辑：分段连续的指数凸函数仓位管理
-# ==========================================
+
+#  核心逻辑：分段连续的指数凸函数仓位管理
+
 def calculate_tiered_gradient_weight(prob, sector_bias):
     """非线性分段梯度加仓函数（采用指数凸函数避免多项式震荡）"""
     if prob < PROB_B:
@@ -89,9 +91,9 @@ def get_tier_label(prob):
     else: return "CD"
 
 
-# ==========================================
-# 🧠 深度学习组件与特征工程
-# ==========================================
+
+#  深度学习组件与特征工程
+
 class StockTransformer(nn.Module):
     def __init__(self, input_size, seq_len=10, d_model=64, nhead=4, num_layers=2):
         super(StockTransformer, self).__init__()
@@ -193,7 +195,7 @@ def fetch_all_historical_data():
         print(f"   -> 📡 正在拉取个股数据: {code} ...")
         for attempt in range(3):
             try:
-                time.sleep(1.5)  # 🛡️ 防反爬休眠
+                time.sleep(1.5)  #  防反爬休眠
                 df_raw = ak.stock_zh_a_hist_tx(symbol=sym, start_date="20220101",
                                                end_date=datetime.datetime.now().strftime("%Y%m%d"), adjust="qfq")
                 if not df_raw.empty:
@@ -341,7 +343,7 @@ def run_backtest():
     if not records: return
     df_res = pd.DataFrame(records)
 
-    # 🌟 核心：Top2 强制过滤，不满 B 档坚决空仓
+    #  核心：Top2 强制过滤，不满 B 档坚决空仓
     df_res['Rank_TX'] = df_res.groupby('Date')['Prob_TX'].rank(ascending=False, method='first')
     df_res['Rank_BS'] = df_res.groupby('Date')['Prob_BS'].rank(ascending=False, method='first')
 
@@ -351,7 +353,7 @@ def run_backtest():
     df_res['Bias_TX'] = df_res['Sector'].map(BIAS_TX)
     df_res['Bias_BS'] = df_res['Sector'].map(BIAS_BS)
 
-    # 🌟 核心：凸函数梯度加仓
+    #  核心：凸函数梯度加仓
     df_res['Weight_TX'] = df_res.apply(
         lambda x: calculate_tiered_gradient_weight(x['Prob_TX'], x['Bias_TX']) if x['Signal_TX'] == 1 else 0, axis=1)
     df_res['Weight_BS'] = df_res.apply(

@@ -1,3 +1,5 @@
+"""科技成长 BS 训练。"""
+
 import os
 import baostock as bs
 import pandas as pd
@@ -8,7 +10,7 @@ import catboost as cb
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression  # 🌟 新增：引入逻辑回归
+from sklearn.linear_model import LogisticRegression  #  新增：引入逻辑回归
 import joblib
 import warnings
 import random
@@ -21,7 +23,7 @@ os.makedirs("models", exist_ok=True)
 
 TICKERS_RAW = ['300308', '300502', '300857', '688008', '688257', '688313','301297']
 
-# 🌟 V4.3 全新黄金 13 因子 (剔除老旧指标，引入波动率与隔夜情绪)
+#  V4.3 全新黄金 13 因子 (剔除老旧指标，引入波动率与隔夜情绪)
 FEATURE_COLS = [
     'Relative_Strength', 'Turn', 'Return_5', 'BIAS_20', 'BIAS_60',
     'Vol_Ratio', 'Norm_ATR_14', 'Entity_Ratio', 'Price_Cost_Bias',
@@ -77,7 +79,7 @@ def build_features(df, df_market):
     df['Price_Cost_Bias'] = df['Close'] / (df['VWAP'] + 1e-8) - 1
     df['Boll_Width'] = (df['Close'].rolling(window=20).std() * 2) / (df['MA20'] + 1e-8)
 
-    # 🌟 注入 3 大高维新因子
+    #  注入 3 大高维新因子
     df['Realized_Vol_20'] = df['PctChg'].rolling(20).std() * np.sqrt(252)  # 20日年化波动率
     df['PV_Corr_10'] = df['Close'].rolling(10).corr(df['Volume']).fillna(0)  # 10日量价相关性
     df['Overnight_Return'] = df['Open'] / (df['Prev_Close'] + 1e-8) - 1  # 隔夜跳空情绪
@@ -160,7 +162,7 @@ def train():
 
         X_meta_val = np.c_[p_xgb_val, p_lgb_val, p_cat_val, p_tf_val]
 
-        # 🌟 核心修改：剥夺树模型的反向扭曲，使用平滑的逻辑回归总司令
+        #  核心修改：剥夺树模型的反向扭曲，使用平滑的逻辑回归总司令
         meta_model = LogisticRegression(C=1.0, max_iter=1000)
         meta_model.fit(X_meta_val, y_val[10:])
         joblib.dump(meta_model, f"models/{code}_meta.pkl")

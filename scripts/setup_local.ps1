@@ -7,7 +7,7 @@ try {
         & python -m venv .venv
         if ($LASTEXITCODE -ne 0) { throw 'Python venv creation failed' }
     }
-    & .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt pandas numpy
+    & .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt pandas numpy scikit-learn
     if ($LASTEXITCODE -ne 0) { throw 'Core dependency installation failed' }
     if ($FullModelStack) {
         & .\.venv\Scripts\python.exe -m pip install -r requirements-models.txt

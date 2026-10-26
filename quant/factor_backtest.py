@@ -1,8 +1,4 @@
-"""Real-data factor evaluation for the portable research executor.
-
-The module deliberately computes metrics from historical prices. It never asks an
-LLM to estimate IC, return, drawdown, turnover, decay, or leakage status.
-"""
+"""因子计算与历史回测。"""
 
 from __future__ import annotations
 

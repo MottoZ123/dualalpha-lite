@@ -1,3 +1,5 @@
+"""TX 因子解释。"""
+
 import os
 import datetime
 import joblib

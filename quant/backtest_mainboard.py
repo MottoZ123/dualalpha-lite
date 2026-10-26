@@ -1,3 +1,5 @@
+"""主板滚动回测。"""
+
 import os
 import time
 import datetime
@@ -18,15 +20,15 @@ from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
 
-# 🌟 限制 PyTorch 线程数，防止 CPU 算力踩踏
+#  限制 PyTorch 线程数，防止 CPU 算力踩踏
 torch.set_num_threads(4)
 
-# ==========================================
-# ⚙️ 核心配置 (路线 A：尾盘埋伏 T+5 | 满血架构 | TQDM版)
-# ==========================================
+
+#  核心配置 (路线 A：尾盘埋伏 T+5 | 满血架构 | TQDM版)
+
 TICKERS_RAW = ['600522', '002335', '000657', '601899']
 TRAIN_WINDOW_DAYS = 250
-STEP_SIZE_DAYS = 5  # 🌟 步长放大 5 倍！大幅缩减训练次数，加快进度
+STEP_SIZE_DAYS = 5  #  步长放大 5 倍！大幅缩减训练次数，加快进度
 FRICTION_COST = 0.0  # 继续保持零税费，纯净验收预测威力
 SEQ_LEN = 10
 
@@ -36,14 +38,14 @@ PROB_S = 0.65
 MAX_SINGLE_POS = 0.8
 BIAS_MAIN = 1.3
 
-# 🧱 V6-BS 纯净量价因子
+#  V6-BS 纯净量价因子
 FEATURES_BS = [
     'Relative_Strength_20', 'MACD_Hist_Norm', 'Z_Score_20',
     'ATR_Ratio_14_60', 'Vol_Surge_60', 'Price_VWAP_Bias',
     'MFI_14', 'Return_5', 'Return_20'
 ]
 
-# 🧱 V7-TX 纯价格免疫因子
+#  V7-TX 纯价格免疫因子
 FEATURES_TX = [
     'Relative_Strength_20', 'MACD_Hist_Norm', 'Z_Score_20',
     'ATR_Ratio_14_60', 'Price_EMA_Bias_20', 'Return_5', 'Return_20',
@@ -186,7 +188,7 @@ def train_and_predict(df, current_test_dates, features):
     X_train_scaled = scaler.fit_transform(df_train[features].values)
     X_test_scaled = scaler.transform(df_test_extended[features].values)
 
-    # 🌟 重构目标锚点：今天买入，5天后卖出，因此模型需要预判 5 天后的涨跌！
+    #  重构目标锚点：今天买入，5天后卖出，因此模型需要预判 5 天后的涨跌！
     y_train_raw = (df_train['Close'].shift(-STEP_SIZE_DAYS) > df_train['Close']).astype(int).values
     X_train_scaled, y_train_raw = X_train_scaled[:-STEP_SIZE_DAYS], y_train_raw[:-STEP_SIZE_DAYS]
 
@@ -261,7 +263,7 @@ def execute_engine(source):
 
     records = []
 
-    # 🌟 步长更改为 STEP_SIZE_DAYS (5)，大幅减少推演循环！
+    #  步长更改为 STEP_SIZE_DAYS (5)，大幅减少推演循环！
     for i in tqdm(range(0, len(backtest_dates), STEP_SIZE_DAYS), desc=f"🚀 [{source}] 满血战车 T+5 滚推", ncols=100):
         decision_date = backtest_dates[i]
         for code in TICKERS_RAW:
@@ -271,7 +273,7 @@ def execute_engine(source):
             prob = preds.get(decision_date, 0.5)
 
             loc = df.index.get_loc(decision_date)
-            # 🌟 T+5 结算锚点：今天尾盘买入，5个交易日后的尾盘卖出
+            #  T+5 结算锚点：今天尾盘买入，5个交易日后的尾盘卖出
             if loc + STEP_SIZE_DAYS < len(df):
                 close_today = df.iloc[loc]['Close']
                 close_target = df.iloc[loc + STEP_SIZE_DAYS]['Close']

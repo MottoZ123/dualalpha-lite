@@ -1,3 +1,5 @@
+"""TX 日频预测。"""
+
 import os
 import time
 import random
@@ -15,23 +17,23 @@ import joblib
 import torch
 import torch.nn as nn
 from workbench_core.research_registry import resolve_active_model_dir
-from llm_DeepSeek_tx import ask_ai_agent
+from quant.report_tx import ask_ai_agent
 
 warnings.filterwarnings('ignore')
 
-# 🌟 全域列装：科技成长阵营 + 主板周期阵营
-TECH_TICKERS = ['300308', '300502', '300857', '688008', '688257', '688313', '301297'] # 👈 已在此处加入 301297
+#  全域列装：科技成长阵营 + 主板周期阵营
+TECH_TICKERS = ['300308', '300502', '300857', '688008', '688257', '688313', '301297'] #  已在此处加入 301297
 MAIN_TICKERS = ['600522', '002335', '000657', '601899']
 TICKERS_RAW = TECH_TICKERS + MAIN_TICKERS
 
-# 🧱 科技阵营因子 (TX-V4.4 趋势资金流)
+#  科技阵营因子 (TX-V4.4 趋势资金流)
 TECH_FEATURES = [
     'Relative_Strength', 'Return_5', 'BIAS_20', 'BIAS_60',
     'Vol_Ratio', 'Norm_ATR_14', 'Entity_Ratio', 'Boll_Width',
     'Realized_Vol_20', 'PV_Corr_10', 'Overnight_Return',
     'CMF_20', 'Trend_Strength_20'
 ]
-# 🧱 主板阵营因子 (TX-V7 纯价格免疫流)
+#  主板阵营因子 (TX-V7 纯价格免疫流)
 MAIN_FEATURES = [
     'Relative_Strength_20', 'MACD_Hist_Norm', 'Z_Score_20',
     'ATR_Ratio_14_60', 'Price_EMA_Bias_20', 'Return_5', 'Return_20',
@@ -65,7 +67,7 @@ def get_market_baseline_tx():
 
 
 def preprocess_basic(df_raw, df_market):
-    # 🌟 修复点1：加入了最全的大小写英文与中文列名映射，防止因为找不到列名导致全部填0
+    #  修复点1：加入了最全的大小写英文与中文列名映射，防止因为找不到列名导致全部填0
     col_mapping = {
         '日期': 'date', 'time': 'date',
         '开盘': 'Open', 'open': 'Open',
@@ -208,7 +210,7 @@ def run_daily_check(user_holdings=""):
                 "档位": get_position_tier(final_prob), "raw_prob": final_prob, "sector": "科技" if is_tech else "主板"
             }
         except Exception as e:
-            # 🌟 修复点2：将异常状态存下，后续会在控制台显性打印！
+            #  修复点2：将异常状态存下，后续会在控制台显性打印！
             predictions[raw_code] = {"状态": f"异常: {str(e)}"}
 
     valid_preds = {k: v for k, v in predictions.items() if "raw_prob" in v}
@@ -227,7 +229,7 @@ def run_daily_check(user_holdings=""):
         v = valid_preds[c]
         print(f"[{c}] 价: ¥{v['最新价格']:<5} | 胜率: {v['综合胜率(超额)']:<5} | {v['档位']} | 底牌: {v['专家底牌']}")
 
-    # 🌟 修复点3：将报错信息直接打在屏幕上，拒绝“蒙在鼓里”！
+    #  修复点3：将报错信息直接打在屏幕上，拒绝“蒙在鼓里”！
     if error_preds:
         print("\n⚠️ [警报] 以下股票拉取或计算发生异常：")
         for err_code, err_info in error_preds.items():

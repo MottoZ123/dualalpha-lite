@@ -715,11 +715,11 @@ def _run_training(job_id: str, body: JobRequest):
         results = {}
         if body.engine in {"tx", "both"}:
             _set_job(job_id, progress=15, progress_message="正在训练 TX 轨道")
-            from train_mainboard_tx import train as train_tx
+            from quant.train_mainboard_tx import train as train_tx
             results["tx"] = train_tx(body.stocks, body.factors, output_root / "tx")
         if body.engine in {"bs", "both"}:
             _set_job(job_id, progress=55 if body.engine == "both" else 15, progress_message="正在训练 BS 轨道")
-            from train_mainboard_bs import train as train_bs
+            from quant.train_mainboard_bs import train as train_bs
             results["bs"] = train_bs(body.stocks, body.factors, output_root / "bs")
         _set_job(job_id, status="completed", progress=100, progress_message="训练完成", completed_at=datetime.now(timezone.utc).isoformat(), output_dir=str(output_root), results=results)
     except Exception as exc:
@@ -734,7 +734,7 @@ def _run_backtest(job_id: str, body: JobRequest):
         return
     try:
         _set_job(job_id, status="running", progress=10, progress_message="正在拉取并校验历史数据", started_at=datetime.now(timezone.utc).isoformat())
-        from factor_backtest import run_factor_backtest
+        from quant.factor_backtest import run_factor_backtest
         output_root = (cfg.training_runs_dir or (cfg.data_dir / "training-runs")) / job_id / "backtest"
         result = run_factor_backtest(body.stocks, body.factors, body.config, output_root, body.weights)
         _set_job(job_id, status="completed", progress=100, progress_message="回测完成", completed_at=datetime.now(timezone.utc).isoformat(), output_dir=str(output_root), results=result)
@@ -820,10 +820,10 @@ def run_engine(engine: str, body: RunRequest):
         tx_raw = bs_raw = None
         tx_report = bs_report = None
         if engine in {"tx", "both"}:
-            from daily_agent_tx import run_daily_check
+            from quant.predict_tx import run_daily_check
             tx_raw, tx_report = run_daily_check(body.holdings)
         if engine in {"bs", "both"}:
-            from daily_agent_bs import run_daily_check_bs
+            from quant.predict_bs import run_daily_check_bs
             bs_raw, bs_report = run_daily_check_bs(body.holdings)
         result = {
             "tx": normalize_predictions(tx_raw or {}, "tx") if tx_raw is not None else None,

@@ -1,3 +1,5 @@
+"""主板 TX 训练。"""
+
 import os
 import datetime
 import pandas as pd
@@ -23,17 +25,17 @@ torch.manual_seed(42)
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 
-# 🌟 TX 专属 V7 (纯价格引擎) 隔离目录
+#  TX 专属 V7 (纯价格引擎) 隔离目录
 os.makedirs("models_tx_v7", exist_ok=True)
 os.makedirs("factor_reports_tx_v7", exist_ok=True)
 
 TICKERS_RAW = ['600522', '002335', '000657', '601899']
 
-# 🧱 V7 纯价格原生因子 (彻底弃用 Volume，100% 依赖高精度价格数据)
+#  V7 纯价格原生因子 (彻底弃用 Volume，100% 依赖高精度价格数据)
 FEATURE_COLS = [
     'Relative_Strength_20', 'MACD_Hist_Norm', 'Z_Score_20',
     'ATR_Ratio_14_60', 'Price_EMA_Bias_20', 'Return_5', 'Return_20',
-    'Williams_R_14', 'CCI_14', 'Candle_Shape'  # 🌟 新晋三大纯价格火力
+    'Williams_R_14', 'CCI_14', 'Candle_Shape'  #  新晋三大纯价格火力
 ]
 
 
@@ -86,7 +88,7 @@ def build_features(df, df_market):
     df['TR'] = df[['High', 'Prev_Close']].max(axis=1) - df[['Low', 'Prev_Close']].min(axis=1)
     df['ATR_Ratio_14_60'] = df['TR'].rolling(14).mean() / (df['TR'].rolling(60).mean() + 1e-8)
 
-    # 🌟 4. 新晋纯价三剑客 (完全免疫 Volume 瘫痪)
+    #  4. 新晋纯价三剑客 (完全免疫 Volume 瘫痪)
     # 威廉指标 (超买超卖)
     highest_14 = df['High'].rolling(14).max()
     lowest_14 = df['Low'].rolling(14).min()
@@ -157,7 +159,7 @@ def train(tickers=None, feature_cols=None, output_root=None):
             crit = nn.BCELoss()
             for _ in range(80): opt.zero_grad(); crit(net(X_t), y_t).backward(); opt.step()
 
-            p1, p2, p3 = m1.predict_proba(X_s[idx:])[10:, 1], m2.predict_proba(X_s[idx:])[10:, 1], \
+            p1, p2, p3 = m1.predict_proba(X_s[idx:])[10:, 1], m2.predict_proba(X_s[idx:])[10:, 1],\
             m3.predict_proba(X_s[idx:])[10:, 1]
             net.eval()
             with torch.no_grad():

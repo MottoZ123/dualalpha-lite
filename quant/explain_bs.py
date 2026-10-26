@@ -1,3 +1,5 @@
+"""BS 因子解释。"""
+
 import os
 import joblib
 import numpy as np

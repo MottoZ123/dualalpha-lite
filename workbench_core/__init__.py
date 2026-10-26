@@ -1,4 +1,4 @@
-"""本地工作台 core services."""
+"""工作台行情与指标服务。"""
 
 from .service import WorkbenchService
 

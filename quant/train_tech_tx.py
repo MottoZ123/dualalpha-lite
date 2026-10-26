@@ -1,3 +1,5 @@
+"""科技成长 TX 训练。"""
+
 import os
 import datetime
 import pandas as pd
@@ -9,7 +11,7 @@ import catboost as cb
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression  # 🌟 新增：引入逻辑回归
+from sklearn.linear_model import LogisticRegression  #  新增：引入逻辑回归
 import joblib
 import warnings
 import random
@@ -22,7 +24,7 @@ os.makedirs("models_tx", exist_ok=True)
 
 TICKERS_RAW = ['300308', '300502', '300857', '688008', '688257', '688313','301297']
 
-# 🌟 V4.4 黄金因子组
+#  V4.4 黄金因子组
 FEATURE_COLS = [
     'Relative_Strength', 'Return_5', 'BIAS_20', 'BIAS_60', 'Vol_Ratio',
     'Norm_ATR_14', 'Entity_Ratio', 'Boll_Width', 'Realized_Vol_20',
@@ -46,7 +48,7 @@ class StockTransformer(nn.Module):
 
 
 def build_features(df, df_market):
-    # 🛡️ 恢复最强壮的列名映射字典
+    #  恢复最强壮的列名映射字典
     col_mapping = {
         '日期': 'date', 'date': 'date', 'time': 'date',
         '开盘': 'Open', 'open': 'Open',
@@ -87,7 +89,7 @@ def build_features(df, df_market):
     df['PV_Corr_10'] = df['Close'].rolling(10).corr(df['Volume']).fillna(0)
     df['Overnight_Return'] = df['Open'] / (df['Prev_Close'] + 1e-8) - 1
 
-    # 🌟 V4.4 核心双雄
+    #  V4.4 核心双雄
     clv = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / df['HL_Range']
     df['CMF_20'] = (clv * df['Volume']).rolling(20).sum() / (df['Volume'].rolling(20).sum() + 1e-8)
     df['Trend_Strength_20'] = (df['Close'] - df['Close'].shift(20)) / (
@@ -147,7 +149,7 @@ def train():
             with torch.no_grad():
                 p4 = net(X_v).cpu().numpy().flatten()
 
-            # 🌟 核心修改：剥夺树模型的反向扭曲，使用平滑的逻辑回归总司令
+            #  核心修改：剥夺树模型的反向扭曲，使用平滑的逻辑回归总司令
             meta = LogisticRegression(C=1.0, max_iter=1000)
             meta.fit(np.c_[p1, p2, p3, p4], y[idx + 10:])
 

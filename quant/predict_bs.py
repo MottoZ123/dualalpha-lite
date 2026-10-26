@@ -1,3 +1,5 @@
+"""BS 日频预测。"""
+
 import os
 import baostock as bs
 import pandas as pd
@@ -10,23 +12,23 @@ from workbench_core.research_registry import resolve_active_model_dir
 import torch
 import torch.nn as nn
 import warnings
-from llm_DeepSeek_bs import ask_ai_agent
+from quant.report_bs import ask_ai_agent
 
 warnings.filterwarnings('ignore')
 
-# 🌟 全域列装：科技成长阵营 + 主板周期阵营
-# 🌟 全域列装：科技成长阵营 + 主板周期阵营
-TECH_TICKERS = ['300308', '300502', '300857', '688008', '688257', '688313', '301297'] # 👈 已在此处加入 301297
+#  全域列装：科技成长阵营 + 主板周期阵营
+#  全域列装：科技成长阵营 + 主板周期阵营
+TECH_TICKERS = ['300308', '300502', '300857', '688008', '688257', '688313', '301297'] #  已在此处加入 301297
 MAIN_TICKERS = ['600522', '002335', '000657', '601899']
 TICKERS_RAW = TECH_TICKERS + MAIN_TICKERS
 
-# 🧱 科技阵营因子 (BS 成本偏离流)
+#  科技阵营因子 (BS 成本偏离流)
 TECH_FEATURES = [
     'Relative_Strength', 'Turn', 'Return_5', 'BIAS_20', 'BIAS_60',
     'Vol_Ratio', 'Norm_ATR_14', 'Entity_Ratio', 'Price_Cost_Bias',
     'Boll_Width', 'Realized_Vol_20', 'PV_Corr_10', 'Overnight_Return'
 ]
-# 🧱 主板阵营因子 (BS-V6 量价共振流)
+#  主板阵营因子 (BS-V6 量价共振流)
 MAIN_FEATURES = [
     'Relative_Strength_20', 'MACD_Hist_Norm', 'Z_Score_20',
     'ATR_Ratio_14_60', 'Vol_Surge_60', 'Price_VWAP_Bias',
@@ -136,7 +138,7 @@ def run_daily_check_bs(user_holdings=""):
 
             df_base = preprocess_basic(df_raw, df_market)
 
-            # 🌟 核心：判断阵营，调用不同特征和模型文件夹
+            #  核心：判断阵营，调用不同特征和模型文件夹
             is_tech = code in TECH_TICKERS
             df = build_features_tech(df_base) if is_tech else build_features_main(df_base)
             features = TECH_FEATURES if is_tech else MAIN_FEATURES

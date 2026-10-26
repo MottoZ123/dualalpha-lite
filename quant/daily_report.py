@@ -1,3 +1,5 @@
+"""双轨日报与结果归档。"""
+
 import os
 import datetime
 import json
@@ -7,16 +9,16 @@ import warnings
 import akshare as ak
 import pandas as pd
 import numpy as np
-from daily_agent_tx import run_daily_check as run_tx
-from daily_agent_bs import run_daily_check_bs as run_bs
+from quant.predict_tx import run_daily_check as run_tx
+from quant.predict_bs import run_daily_check_bs as run_bs
 from research_core.config import get_provider_config
 from research_core.llm_client import chat_completion_text
 
 warnings.filterwarnings('ignore')
 
-# ==========================================
-# ⚙️ 双模型串行配置 (裁判中心)
-# ==========================================
+
+#  双模型串行配置 (裁判中心)
+
 _VOLC_PROVIDER = get_provider_config("volcengine")
 _DEEPSEEK_PROVIDER = get_provider_config("deepseek")
 VOLC_CONFIG = {"api_key": _VOLC_PROVIDER.api_key, "model": _VOLC_PROVIDER.model, "url": _VOLC_PROVIDER.base_url}
@@ -114,9 +116,9 @@ def verify_all_horizons():
         return f"⚠️ 滚动结算失败: {e}\n"
 
 
-# ==========================================
-# 🧠 升级版：冷血机构对撞大脑
-# ==========================================
+
+#  升级版：冷血机构对撞大脑
+
 def ask_ab_comparison_agent(preds_tx, preds_bs, user_holdings="", max_retries=3):
     _DEEPSEEK_PROVIDER.validate()
     # 第一步：火山进行初级分歧扫描
@@ -133,7 +135,7 @@ def ask_ab_comparison_agent(preds_tx, preds_bs, user_holdings="", max_retries=3)
 
     holding_info = f"\n    【指挥官当前实盘持仓状况】：{user_holdings}\n" if user_holdings.strip() else ""
 
-    # 🌟 史诗级升级的 DeepSeek 对撞提示词
+    #  史诗级升级的 DeepSeek 对撞提示词
     ds_prompt = f"""
     【机密输入：全域海陆空双轨对撞数据】
     🔴 A组 [TX 全域引擎]: 

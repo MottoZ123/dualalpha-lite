@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from factor_backtest import _safe_factor_formula, compute_factor_frame, evaluate_factor_panel, evaluate_factor_relationships, local_dual_track_walk_forward, walk_forward_t1_backtest
+from quant.factor_backtest import _safe_factor_formula, compute_factor_frame, evaluate_factor_panel, evaluate_factor_relationships, local_dual_track_walk_forward, walk_forward_t1_backtest
 
 
 class FactorBacktestTests(unittest.TestCase):

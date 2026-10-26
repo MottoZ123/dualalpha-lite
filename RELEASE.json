@@ -1,9 +1,0 @@
-{
-  "product": "本地工作台 / DualAlpha-Lite",
-  "date": "2026-10-26",
-  "baselineRepository": "https://github.com/motto-debug/dualalpha-lite",
-  "baselineCommit": "74c20821f453790b3aed5016112c15345ec81f14",
-  "scope": "local-only",
-  "modelWeightsIncluded": false,
-  "personalDataIncluded": false
-}
