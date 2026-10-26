@@ -1,0 +1,10 @@
+{
+  "name": "Motto Stock-Analysis",
+  "short_name": "Motto Stock",
+  "description": "个人投资工作台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060a12",
+  "theme_color": "#060a12",
+  "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}

@@ -1,17 +1,18 @@
-import os
 import requests
 import json
 import time
+from research_core.config import get_provider_config
+from research_core.llm_client import chat_completion_text
 
+_PROVIDER = get_provider_config("deepseek")
 DEEPSEEK_CONFIG = {
-    "api_key": os.getenv("DEEPSEEK_API_KEY", ""),
-    "model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
-    "url": os.getenv("DEEPSEEK_URL", "https://api.deepseek.com/chat/completions")
+    "api_key": _PROVIDER.api_key,
+    "model": _PROVIDER.model,
+    "url": _PROVIDER.base_url,
 }
 
 def ask_ai_agent(tech_preds, main_preds, user_holdings="", max_retries=3):
-    if not DEEPSEEK_CONFIG["api_key"]:
-        return "DeepSeek report skipped: set DEEPSEEK_API_KEY to enable LLM analysis."
+    _PROVIDER.validate()
     headers = {"Authorization": f"Bearer {DEEPSEEK_CONFIG['api_key']}", "Content-Type": "application/json"}
     holdings_text = f"\n    【指挥官当前实盘持仓状况】：{user_holdings}\n" if user_holdings.strip() else ""
 
@@ -64,7 +65,7 @@ def ask_ai_agent(tech_preds, main_preds, user_holdings="", max_retries=3):
     print("   [LLM-BS 全域中枢] 正在穿透双阵营量价迷雾，撰写调仓指令...")
     for attempt in range(1, max_retries + 1):
         try:
-            return requests.post(DEEPSEEK_CONFIG["url"], headers=headers, json=payload, timeout=240).json()['choices'][0]['message']['content']
+            return chat_completion_text(_PROVIDER, payload["messages"], temperature=0.3, max_tokens=4000, max_retries=1, timeout_seconds=240)
         except Exception as e:
             if attempt == max_retries: return f"⚠️ 指挥中心连接失败: {e}"
             time.sleep(3)

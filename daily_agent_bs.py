@@ -6,6 +6,7 @@ import xgboost as xgb
 import lightgbm as lgb
 import catboost as cb
 import joblib
+from motto_core.research_registry import resolve_active_model_dir
 import torch
 import torch.nn as nn
 import warnings
@@ -139,7 +140,7 @@ def run_daily_check_bs(user_holdings=""):
             is_tech = code in TECH_TICKERS
             df = build_features_tech(df_base) if is_tech else build_features_main(df_base)
             features = TECH_FEATURES if is_tech else MAIN_FEATURES
-            model_dir = "models" if is_tech else "models_bs_v6"
+            model_dir = "models" if is_tech else resolve_active_model_dir("bs", "models_bs_v6", "models_bs_v6")
 
             if len(df) < 10: continue
             latest_close = float(df['Close'].iloc[-1])
@@ -181,7 +182,7 @@ def run_daily_check_bs(user_holdings=""):
 
     bs.logout()
     valid_preds = {k: v for k, v in predictions.items() if "raw_prob" in v}
-    report = ask_ai_agent(valid_preds, user_holdings) if valid_preds else "无有效预测数据。"
+    report = ask_ai_agent(valid_preds, {}, user_holdings) if valid_preds else "无有效预测数据。"
 
     print("\n" + "★" * 80)
     for code in sorted([k for k in valid_preds], key=lambda x: valid_preds[x]['raw_prob'], reverse=True):

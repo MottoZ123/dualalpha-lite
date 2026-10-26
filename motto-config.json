@@ -1,0 +1,45 @@
+{
+  "name": "Motto Stock-Analysis",
+  "portfolio_mode": "none",
+  "portfolio_interface_enabled": true,
+  "port": 8910,
+  "timezone": "Asia/Shanghai",
+  "currency": "CNY",
+  "vibe": {
+    "enabled": false,
+    "mode": "supplement",
+    "allowed_scopes": ["reports", "news", "financials"]
+  },
+  "refresh_seconds": {
+    "quote": 10,
+    "intraday": 30,
+    "market": 60,
+    "fund_flow": 120,
+    "news": 180,
+    "kline": 300,
+    "fund": 300,
+    "valuation": 3600
+  },
+  "universe": [
+    {"code": "000001", "name": "上证指数", "market": "CN", "asset_type": "index"},
+    {"code": "399001", "name": "深证成指", "market": "CN", "asset_type": "index"},
+    {"code": "399006", "name": "创业板指", "market": "CN", "asset_type": "index"},
+    {"code": "000688", "name": "科创50", "market": "CN", "asset_type": "index"},
+    {"code": "000300", "name": "沪深300", "market": "CN", "asset_type": "index"},
+    {"code": "000905", "name": "中证500", "market": "CN", "asset_type": "index"},
+    {"code": "000852", "name": "中证1000", "market": "CN", "asset_type": "index"},
+    {"code": "000016", "name": "上证50", "market": "CN", "asset_type": "index"},
+    {"code": "399673", "name": "创业板50", "market": "CN", "asset_type": "index"},
+    {"code": "510300", "name": "沪深300ETF", "market": "CN", "asset_type": "etf"},
+    {"code": "159920", "name": "恒生ETF", "market": "CN", "asset_type": "etf"},
+    {"code": "513100", "name": "纳指ETF", "market": "CN", "asset_type": "etf"},
+    {"code": "00700", "name": "腾讯控股", "market": "HK", "asset_type": "equity"},
+    {"code": "161725", "name": "招商中证白酒指数基金", "market": "CN", "asset_type": "fund", "benchmark_code": "H30539", "benchmark_name": "中证白酒指数", "benchmark_formula": "中证白酒指数收益率×95% + 金融机构人民币活期存款基准利率（税后）×5%", "benchmark_source_url": "https://www.cmfchina.com/web/fundDetail/161725/index.html"},
+    {"code": "AAPL", "name": "Apple", "market": "US", "asset_type": "equity"},
+    {"code": "MSFT", "name": "Microsoft", "market": "US", "asset_type": "equity"},
+    {"code": "NVDA", "name": "NVIDIA", "market": "US", "asset_type": "equity"},
+    {"code": "AMZN", "name": "Amazon", "market": "US", "asset_type": "equity"},
+    {"code": "TSLA", "name": "Tesla", "market": "US", "asset_type": "equity"},
+    {"code": "BABA", "name": "Alibaba", "market": "US", "asset_type": "equity"}
+  ]
+}

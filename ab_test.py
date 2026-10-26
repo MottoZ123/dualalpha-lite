@@ -9,12 +9,15 @@ import pandas as pd
 import numpy as np
 from daily_agent_tx import run_daily_check as run_tx
 from daily_agent_bs import run_daily_check_bs as run_bs
+from research_core.config import get_provider_config
+from research_core.llm_client import chat_completion_text
 
 warnings.filterwarnings('ignore')
 
-API_KEY = os.getenv("VOLCENGINE_API_KEY", "")
-ENDPOINT_MODEL = os.getenv("VOLCENGINE_MODEL", "your-volcengine-endpoint-id")
-BASE_URL = os.getenv("VOLCENGINE_URL", "https://ark.cn-beijing.volces.com/api/v3/chat/completions")
+_PROVIDER = get_provider_config("volcengine")
+API_KEY = _PROVIDER.api_key
+ENDPOINT_MODEL = _PROVIDER.model
+BASE_URL = _PROVIDER.base_url
 FRICTION_COST = 0.002
 
 
@@ -108,8 +111,7 @@ def verify_all_horizons():
 
 
 def ask_ab_comparison_agent(preds_tx, preds_bs, max_retries=3):
-    if not API_KEY or ENDPOINT_MODEL == "your-volcengine-endpoint-id":
-        return "Volcengine comparison skipped: set VOLCENGINE_API_KEY and VOLCENGINE_MODEL to enable LLM analysis."
+    _PROVIDER.validate()
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     prompt = f"""
     你是一位顶级百亿量化私募的“首席策略大脑”。今日两套核心系统数据：
@@ -136,8 +138,10 @@ def ask_ab_comparison_agent(preds_tx, preds_bs, max_retries=3):
     print("   [裁判 LLM] 正在深度推演 (最长等待 5 分钟)...")
     for _ in range(max_retries):
         try:
-            return requests.post(BASE_URL, headers=headers, json=payload, timeout=300).json()['choices'][0]['message'][
-                'content']
+            return chat_completion_text(
+                _PROVIDER, payload["messages"], temperature=0.25, max_tokens=5000,
+                max_retries=1, timeout_seconds=300,
+            )
         except Exception:
             time.sleep(3)
     return "❌ 接口持续超时访问被拒绝。"

@@ -103,7 +103,20 @@ def build_features(df, df_market):
     return df.replace([np.inf, -np.inf], np.nan).dropna()
 
 
-def train():
+def train(tickers=None, feature_cols=None, output_root=None):
+    tickers = [str(code).strip() for code in (tickers or TICKERS_RAW) if str(code).strip()]
+    selected_features = [name for name in (feature_cols or FEATURE_COLS) if name in FEATURE_COLS]
+    if len(selected_features) < 3:
+        raise ValueError("TX training requires at least three compatible factors")
+    if output_root:
+        output_root = os.fspath(output_root)
+        model_dir = os.path.join(output_root, "models_tx_v7")
+        report_dir = os.path.join(output_root, "factor_reports_tx_v7")
+    else:
+        model_dir = "models_tx_v7"
+        report_dir = "factor_reports_tx_v7"
+    os.makedirs(model_dir, exist_ok=True)
+    os.makedirs(report_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"🚀 V7 纯价格引擎 TX 炼丹炉点火 | 硬件: {device}")
 
@@ -115,7 +128,7 @@ def train():
         print(f"❌ 大盘拉取失败: {e}")
         return
 
-    for code in TICKERS_RAW:
+    for code in tickers:
         sym = f"sh{code}" if code.startswith('6') else f"sz{code}"
         print(f"\n⏳ 正在提炼无量纲原生数据 [{code}]...")
         try:
@@ -124,7 +137,7 @@ def train():
             if len(df_raw) < 200: continue
 
             df = build_features(df_raw, df_market)
-            X, y = df[FEATURE_COLS].values, df['Target'].values
+            X, y = df[selected_features].values, df['Target'].values
 
             idx = int(len(X) * 0.8)
             scaler = StandardScaler().fit(X[:idx])
@@ -137,7 +150,7 @@ def train():
             m3 = cb.CatBoostClassifier(depth=3, verbose=0);
             m3.fit(X_s[:idx], y[:idx])
 
-            net = StockTransformer(len(FEATURE_COLS)).to(device)
+            net = StockTransformer(len(selected_features)).to(device)
             X_t = torch.FloatTensor(np.array([X_s[:idx][i - 10:i] for i in range(10, idx)])).to(device)
             y_t = torch.FloatTensor(y[10:idx]).unsqueeze(1).to(device)
             opt = torch.optim.Adam(net.parameters(), lr=0.001);
@@ -153,15 +166,15 @@ def train():
 
             meta = LogisticRegression(C=1.0).fit(np.c_[p1, p2, p3, p4], y[idx + 10:])
 
-            joblib.dump(StandardScaler().fit(X), f"models_tx_v7/{code}_scaler.pkl")
-            joblib.dump(meta, f"models_tx_v7/{code}_meta.pkl")
+            joblib.dump(StandardScaler().fit(X), os.path.join(model_dir, f"{code}_scaler.pkl"))
+            joblib.dump(meta, os.path.join(model_dir, f"{code}_meta.pkl"))
             m1.fit(X_s, y);
-            m1.save_model(f"models_tx_v7/{code}_xgb.json")
+            m1.save_model(os.path.join(model_dir, f"{code}_xgb.json"))
             m2.fit(X_s, y);
-            joblib.dump(m2, f"models_tx_v7/{code}_lgb.pkl")
+            joblib.dump(m2, os.path.join(model_dir, f"{code}_lgb.pkl"))
             m3.fit(X_s, y);
-            m3.save_model(f"models_tx_v7/{code}_cat.cbm")
-            torch.save(net.state_dict(), f"models_tx_v7/{code}_tf.pth")
+            m3.save_model(os.path.join(model_dir, f"{code}_cat.cbm"))
+            torch.save(net.state_dict(), os.path.join(model_dir, f"{code}_tf.pth"))
 
             print(f"   -> 📊 绘制 [{code}] V7 纯价验尸报告...")
             tree_imp = ((m2.feature_importances_ / (np.sum(m2.feature_importances_) + 1e-8)) * 100 + (
@@ -177,20 +190,22 @@ def train():
             ax1.set_title(f"[{code}] 专家权重分布 (V7 纯价格版)", fontsize=14, fontweight='bold')
 
             ax2 = plt.subplot(2, 2, 2)
-            tr = sorted(zip(FEATURE_COLS, tree_imp), key=lambda x: x[1])
+            tr = sorted(zip(selected_features, tree_imp), key=lambda x: x[1])
             sns.barplot(x=[x[1] for x in tr], y=[x[0] for x in tr], ax=ax2, palette="viridis")
             ax2.set_title(f"[{code}] V7 原生因子重要性", fontsize=14, fontweight='bold')
 
             ax3 = plt.subplot(2, 1, 2)
             plt.sca(ax3);
             plt.title(f"[{code}] 因子博弈沙盘 (100% 免疫 Volume 瘫痪)", fontsize=14, fontweight='bold', pad=20)
-            shap.summary_plot(shap_v, X_s[-250:], feature_names=FEATURE_COLS, show=False)
+            shap.summary_plot(shap_v, X_s[-250:], feature_names=selected_features, show=False)
             plt.tight_layout();
-            plt.savefig(os.path.join("factor_reports_tx_v7", f"{code}_V7_TX_SHAP.png"), dpi=150, bbox_inches='tight');
+            plt.savefig(os.path.join(report_dir, f"{code}_V7_TX_SHAP.png"), dpi=150, bbox_inches='tight');
             plt.close(fig)
             print(f"   ✅ [{code}] TX 纯价战车炼制完毕！")
         except Exception as e:
             print(f"   ❌ [{code}] 失败: {e}")
+
+    return {"status": "completed", "stocks": tickers, "factors": selected_features, "model_dir": model_dir, "report_dir": report_dir}
 
 
 if __name__ == "__main__": train()

@@ -14,6 +14,7 @@ import catboost as cb
 import joblib
 import torch
 import torch.nn as nn
+from motto_core.research_registry import resolve_active_model_dir
 from llm_DeepSeek_tx import ask_ai_agent
 
 warnings.filterwarnings('ignore')
@@ -167,7 +168,7 @@ def run_daily_check(user_holdings=""):
             is_tech = raw_code in TECH_TICKERS
             df = build_features_tech(df_base) if is_tech else build_features_main(df_base)
             features = TECH_FEATURES if is_tech else MAIN_FEATURES
-            model_dir = "models_tx" if is_tech else "models_tx_v7"
+            model_dir = "models_tx" if is_tech else resolve_active_model_dir("tx", "models_tx_v7", "models_tx_v7")
 
             if len(df) < 10:
                 raise ValueError("特征计算后有效行数不足10天 (常见于全部停牌)")

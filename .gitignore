@@ -56,3 +56,22 @@ data/
 *.xlsx
 *.parquet
 
+
+# Local Motto runtime and frontend builds
+.env.*
+!.env.example
+node_modules/
+.next/
+.wrangler/
+.pnpm-store/
+dist/
+*.tsbuildinfo
+*.log
+*.sqlite*
+*.db
+.motto-cache/
+.motto-runtime/
+.dash_state.json*
+output/
+tmp/
+integrations/

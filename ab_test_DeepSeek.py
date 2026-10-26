@@ -9,23 +9,18 @@ import pandas as pd
 import numpy as np
 from daily_agent_tx import run_daily_check as run_tx
 from daily_agent_bs import run_daily_check_bs as run_bs
+from research_core.config import get_provider_config
+from research_core.llm_client import chat_completion_text
 
 warnings.filterwarnings('ignore')
 
 # ==========================================
 # ⚙️ 双模型串行配置 (裁判中心)
 # ==========================================
-VOLC_CONFIG = {
-    "api_key": os.getenv("VOLCENGINE_API_KEY", ""),
-    "model": os.getenv("VOLCENGINE_MODEL", "your-volcengine-endpoint-id"),
-    "url": os.getenv("VOLCENGINE_URL", "https://ark.cn-beijing.volces.com/api/v3/chat/completions")
-}
-
-DEEPSEEK_CONFIG = {
-    "api_key": os.getenv("DEEPSEEK_API_KEY", ""),
-    "model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
-    "url": os.getenv("DEEPSEEK_URL", "https://api.deepseek.com/chat/completions")
-}
+_VOLC_PROVIDER = get_provider_config("volcengine")
+_DEEPSEEK_PROVIDER = get_provider_config("deepseek")
+VOLC_CONFIG = {"api_key": _VOLC_PROVIDER.api_key, "model": _VOLC_PROVIDER.model, "url": _VOLC_PROVIDER.base_url}
+DEEPSEEK_CONFIG = {"api_key": _DEEPSEEK_PROVIDER.api_key, "model": _DEEPSEEK_PROVIDER.model, "url": _DEEPSEEK_PROVIDER.base_url}
 FRICTION_COST = 0.002
 
 
@@ -123,21 +118,18 @@ def verify_all_horizons():
 # 🧠 升级版：冷血机构对撞大脑
 # ==========================================
 def ask_ab_comparison_agent(preds_tx, preds_bs, user_holdings="", max_retries=3):
+    _DEEPSEEK_PROVIDER.validate()
     # 第一步：火山进行初级分歧扫描
     volc_prompt = f"请作为量化内审员，客观提炼出全域A/B两组数据的多空胜率差异点：\nA组(TX): {json.dumps(preds_tx, ensure_ascii=False)}\nB组(BS): {json.dumps(preds_bs, ensure_ascii=False)}"
     print("   [Chain-Judge] 📡 阶段 1/2：火山引擎正在扫描系统多空分歧...")
-    if not VOLC_CONFIG["api_key"] or VOLC_CONFIG["model"] == "your-volcengine-endpoint-id":
-        volc_verdict = "Volcengine scan skipped: set VOLCENGINE_API_KEY and VOLCENGINE_MODEL to enable it."
-    else:
-        try:
-            res_v = requests.post(VOLC_CONFIG["url"], headers={"Authorization": f"Bearer {VOLC_CONFIG['api_key']}",
-                                                               "Content-Type": "application/json"},
-                                  json={"model": VOLC_CONFIG["model"],
-                                        "messages": [{"role": "user", "content": volc_prompt}], "temperature": 0.2},
-                                  timeout=60)
-            volc_verdict = res_v.json()['choices'][0]['message']['content']
-        except Exception:
-            volc_verdict = "初级扫描不可用，请直接裁定。"
+    try:
+        _VOLC_PROVIDER.validate()
+        volc_verdict = chat_completion_text(
+            _VOLC_PROVIDER, [{"role": "user", "content": volc_prompt}],
+            temperature=0.2, max_tokens=2000, max_retries=1, timeout_seconds=60,
+        )
+    except Exception:
+        volc_verdict = "初级扫描不可用，请直接裁定。"
 
     holding_info = f"\n    【指挥官当前实盘持仓状况】：{user_holdings}\n" if user_holdings.strip() else ""
 
@@ -195,14 +187,12 @@ def ask_ab_comparison_agent(preds_tx, preds_bs, user_holdings="", max_retries=3)
         "max_tokens": 5000
     }
     print("   [Chain-Judge] 🧠 阶段 2/2：DeepSeek 正在综合双系法则产出最高作战指示...")
-    if not DEEPSEEK_CONFIG["api_key"]:
-        return "DeepSeek comparison skipped: set DEEPSEEK_API_KEY to enable LLM analysis."
     for attempt in range(max_retries):
         try:
-            return requests.post(DEEPSEEK_CONFIG["url"],
-                                 headers={"Authorization": f"Bearer {DEEPSEEK_CONFIG['api_key']}",
-                                          "Content-Type": "application/json"}, json=payload_ds, timeout=240).json()[
-                'choices'][0]['message']['content']
+            return chat_completion_text(
+                _DEEPSEEK_PROVIDER, payload_ds["messages"], temperature=0.3,
+                max_tokens=5000, max_retries=1, timeout_seconds=240,
+            )
         except Exception as e:
             if attempt == max_retries - 1: return f"❌ 裁判中心崩溃: {str(e)}"
             time.sleep(3)

@@ -1,0 +1,15 @@
+akshare
+baostock
+pandas
+numpy
+joblib
+xgboost
+lightgbm
+catboost
+torch
+scikit-learn
+matplotlib
+seaborn
+shap
+tqdm
+beautifulsoup4

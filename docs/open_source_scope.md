@@ -1,20 +1,5 @@
-# Open Source Scope
+# 发布范围
 
-This folder contains only the code paths related to the `ab_test_DeepSeek.py` workflow:
+当前包含原始 TX/BS 训练、因子解释、预测与回测代码，以及 Motto 本地工作台界面、FastAPI、MCP 和启动脚本。
 
-- daily TX and BS prediction agents
-- DeepSeek report helpers
-- model training scripts
-- feature analysis scripts
-- walk-forward backtests
-- empty output/model folders with `.gitkeep`
-
-Excluded from this package:
-
-- local virtual environments
-- IDE metadata
-- generated reports
-- trained binary model artifacts
-- private API keys
-- personal crawlers and throwaway test scripts
-
+不含旧网站副本、个人配置、密钥、训练权重、行情/报告数据、虚拟环境、node_modules、缓存、运行数据库或构建产物。目录命名与兼容入口说明见 DIRECTORY_GUIDE.md。
