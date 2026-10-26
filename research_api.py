@@ -20,10 +20,10 @@ from research_core.llm_client import LLMError, chat_completion_text
 from research_core.schemas import compare_prediction_sets, normalize_predictions
 from research_core.tools import latest_comparison, latest_predictions
 from research_core.vibe_client import VibeResearchClient
-from motto_core import MottoService
-from motto_core.analytics import condition_matrix
-from motto_core.research_registry import ResearchRegistry
-from motto_core.http_cache import etag_response
+from workbench_core import WorkbenchService
+from workbench_core.analytics import condition_matrix
+from workbench_core.research_registry import ResearchRegistry
+from workbench_core.http_cache import etag_response
 
 
 cfg = get_app_config()
@@ -40,8 +40,8 @@ _TRAIN_LOCK = threading.Lock()
 _BACKTEST_LOCK = threading.Lock()
 _JOBS_LOCK = threading.Lock()
 _JOBS: dict[str, dict] = {}
-_MOTTO = MottoService()
-_MOTTO.prewarm()
+_WORKBENCH = WorkbenchService()
+_WORKBENCH.prewarm()
 _REGISTRY = ResearchRegistry(cfg.data_dir / "motto-research.sqlite3")
 
 ALLOWED_FACTORS = {
@@ -163,7 +163,7 @@ def build_stock_analysis_messages(code: str, quote: dict, technical: dict) -> li
         {
             "role": "system",
             "content": (
-                "你是 Motto Stock-Analysis 的证据解读层。只能使用用户消息中的结构化行情证据，"
+                "你是 本地工作台 的证据解读层。只能使用用户消息中的结构化行情证据，"
                 "不得补造财务、新闻、估值或目标价。输出中文 Markdown，依次包含：结论、关键证据、"
                 "冲突与风险、条件变化、数据边界。结论只能使用条件偏强/中性观察/条件偏弱/数据不足，"
                 "不得给出买入、卖出、仓位或收益承诺。控制在 450 字以内。"
@@ -305,19 +305,19 @@ def health():
         vibe = VibeResearchClient().health()
     except Exception as exc:  # Vibe is optional; core health must still be observable.
         vibe = {"ok": False, "error": str(exc)}
-    return {"ok": True, "service": "motto-stock-analysis", "motto": _MOTTO.health(), "vibe_research": vibe}
+    return {"ok": True, "service": "motto-stock-analysis", "motto": _WORKBENCH.health(), "vibe_research": vibe}
 
 
 @app.get("/api/ready")
 def ready():
-    result = _MOTTO.ready()
+    result = _WORKBENCH.ready()
     return result if result["ready"] else JSONResponse(result, status_code=503)
 
 
 @app.get("/api/all")
 def motto_all(request: Request):
     try:
-        return etag_response(request, _MOTTO.all())
+        return etag_response(request, _WORKBENCH.all())
     except Exception as exc:
         raise HTTPException(503, f"核心数据包构建失败：{str(exc)[:240]}") from exc
 
@@ -325,20 +325,20 @@ def motto_all(request: Request):
 @app.get("/api/realtime")
 def motto_realtime(request: Request):
     try:
-        return etag_response(request, _MOTTO.realtime_patch())
+        return etag_response(request, _WORKBENCH.realtime_patch())
     except Exception as exc:
         raise HTTPException(503, f"实时数据不可用：{str(exc)[:240]}") from exc
 
 
 @app.get("/api/instruments/search")
 def motto_instrument_search(q: str = Query(..., min_length=1, max_length=40), limit: int = Query(8, ge=1, le=20)):
-    return _MOTTO.search_instruments(q, limit)
+    return _WORKBENCH.search_instruments(q, limit)
 
 
 @app.get("/api/intraday")
 def motto_intraday(code: str = Query(...)):
     try:
-        return _MOTTO.intraday(code)
+        return _WORKBENCH.intraday(code)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -348,7 +348,7 @@ def motto_intraday(code: str = Query(...)):
 @app.get("/api/kline")
 def motto_kline(code: str = Query(...), period: str = Query("day"), limit: int = Query(120, ge=20, le=500)):
     try:
-        return _MOTTO.kline(code, period, limit)
+        return _WORKBENCH.kline(code, period, limit)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -358,7 +358,7 @@ def motto_kline(code: str = Query(...), period: str = Query("day"), limit: int =
 @app.get("/api/rsi-margin")
 def motto_rsi_margin(code: str = Query(...)):
     try:
-        return _MOTTO.technical(code)
+        return _WORKBENCH.technical(code)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -368,7 +368,7 @@ def motto_rsi_margin(code: str = Query(...)):
 @app.get("/api/us")
 def motto_us():
     try:
-        package = _MOTTO.realtime()
+        package = _WORKBENCH.realtime()
         return {**package, "data": [item for item in package.get("data", []) if item.get("market") == "US"]}
     except Exception as exc:
         raise HTTPException(503, f"海外行情不可用：{str(exc)[:240]}") from exc
@@ -376,8 +376,8 @@ def motto_us():
 
 @app.get("/api/news")
 def motto_news(code: str | None = Query(None), limit: int = Query(20, ge=1, le=50)):
-    core = _MOTTO.news(limit)
-    if core.get("data") or not _MOTTO.config.vibe_enabled:
+    core = _WORKBENCH.news(limit)
+    if core.get("data") or not _WORKBENCH.config.vibe_enabled:
         return core
     try:
         return VibeResearchClient().news(code or "market", limit)
@@ -387,71 +387,71 @@ def motto_news(code: str | None = Query(None), limit: int = Query(20, ge=1, le=5
 
 @app.get("/api/market-flows")
 def motto_market_flows(kind: str = Query("industry", pattern="^(industry|concept)$")):
-    return _MOTTO.fund_flows(kind)
+    return _WORKBENCH.fund_flows(kind)
 
 
 @app.get("/api/valuations")
 def motto_valuations(codes: str | None = Query(None)):
     values = [value.strip().upper() for value in codes.split(",") if value.strip()] if codes else None
-    return _MOTTO.valuations(values)
+    return _WORKBENCH.valuations(values)
 
 
 @app.get("/api/margin")
 def motto_margin():
-    return _MOTTO.margin()
+    return _WORKBENCH.margin()
 
 
 @app.get("/api/fund")
 def motto_fund(code: str = Query(..., pattern="^[0-9]{6}$")):
     try:
-        return _MOTTO.fund_snapshot(code)
+        return _WORKBENCH.fund_snapshot(code)
     except Exception as exc:
         raise HTTPException(503, f"基金净值不可用：{str(exc)[:240]}") from exc
 
 
 @app.get("/api/limit-pools")
 def motto_limit_pools():
-    return _MOTTO.limit_pools()
+    return _WORKBENCH.limit_pools()
 
 
 @app.get("/api/macro")
 def motto_macro():
-    return _MOTTO.macro_snapshot()
+    return _WORKBENCH.macro_snapshot()
 
 
 @app.get("/api/fx")
 def motto_fx():
-    return _MOTTO.fx_snapshot()
+    return _WORKBENCH.fx_snapshot()
 
 
 @app.get("/api/us-futures")
 def motto_us_futures():
-    return _MOTTO.us_futures()
+    return _WORKBENCH.us_futures()
 
 
 @app.get("/api/investor-accounts")
 def motto_investor_accounts():
-    return _MOTTO.investor_accounts()
+    return _WORKBENCH.investor_accounts()
 
 
 @app.get("/api/buffett-history")
 def motto_buffett_history():
-    return _MOTTO.buffett_history()
+    return _WORKBENCH.buffett_history()
 
 
 @app.get("/api/cross-market-impact")
 def motto_cross_market_impact():
-    return _MOTTO.cross_market_impact()
+    return _WORKBENCH.cross_market_impact()
 
 
 @app.get("/api/portfolio/capabilities")
 def portfolio_capabilities():
-    return _MOTTO.portfolio_capabilities()
+    return _WORKBENCH.portfolio_capabilities()
 
 
 @app.get("/api/portfolio-realtime")
 def portfolio_realtime():
-    capabilities = _MOTTO.portfolio_capabilities()
+    capabilities = _WORKBENCH.portfolio_capabilities()
     if not capabilities["enabled"]:
         return JSONResponse({**capabilities, "detail": "当前为 A 模式；接口保留但未启用，且不存在任何示例持仓"}, status_code=409)
     return {"data": [], "mode": capabilities["mode"]}
@@ -459,7 +459,7 @@ def portfolio_realtime():
 
 @app.get("/api/extensions/vibe/status")
 def vibe_extension_status():
-    return {"enabled": _MOTTO.config.vibe_enabled, "mode": _MOTTO.config.vibe_mode, "optional": True}
+    return {"enabled": _WORKBENCH.config.vibe_enabled, "mode": _WORKBENCH.config.vibe_mode, "optional": True}
 
 
 @app.get("/api/config/status")
@@ -483,7 +483,7 @@ def capabilities():
 
 @app.get("/api/upstream-status")
 def upstream_status():
-    return _MOTTO.upstream_capabilities()
+    return _WORKBENCH.upstream_capabilities()
 
 
 class StockLlmAnalysisRequest(BaseModel):
@@ -499,8 +499,8 @@ def stock_llm_analysis(body: StockLlmAnalysisRequest):
     except RuntimeError as exc:
         raise HTTPException(409, str(exc)) from exc
     try:
-        technical = _MOTTO.technical(body.code)
-        realtime = _MOTTO.realtime()
+        technical = _WORKBENCH.technical(body.code)
+        realtime = _WORKBENCH.realtime()
         quote = next((row for row in realtime.get("data", []) if row.get("code") == body.code), {"code": body.code})
         messages = build_stock_analysis_messages(body.code, quote, technical)
         analysis = chat_completion_text(

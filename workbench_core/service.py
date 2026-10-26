@@ -10,7 +10,7 @@ from statistics import fmean
 
 from .analytics import chart_indicators, comprehensive_top_observer, condition_matrix, market_temperature, six_dimension_signals, technical_top_inputs, trend_assessment
 from .cache import SWRCache
-from .config import ROOT, Instrument, load_motto_config
+from .config import ROOT, Instrument, load_workbench_config
 from .contracts import DataMeta, envelope
 from .providers import TencentMarketProvider
 from .public_providers import CmeOfficialFuturesProvider, DanjuanValuationProvider, EastMoneyFundProvider, EastMoneyProvider, InstitutionalMacroProvider, OfficialExchangeLimitProvider, SinaGlobalFuturesProvider, SseInvestorAccountsProvider
@@ -18,7 +18,7 @@ from .state import SignalStateStore
 from .market_clock import market_clock
 
 
-class MottoService:
+class WorkbenchService:
     QUOTE_HARD_TTL = 300
     ANALYSIS_HARD_TTL = 1800
     DASHBOARD_HARD_TTL = 1800
@@ -27,7 +27,7 @@ class MottoService:
     DASHBOARD_KEY = "dashboard:v3"
 
     def __init__(self, config=None, provider=None, cache=None, eastmoney=None, danjuan=None, funds=None, macro=None, futures=None, investor_accounts=None, official_limits=None, cme=None):
-        self.config = config or load_motto_config()
+        self.config = config or load_workbench_config()
         self.provider = provider or TencentMarketProvider()
         self.eastmoney = eastmoney or EastMoneyProvider()
         self.danjuan = danjuan or DanjuanValuationProvider()

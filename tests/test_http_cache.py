@@ -2,7 +2,7 @@ import unittest
 
 from fastapi import Request
 
-from motto_core.http_cache import etag_response
+from workbench_core.http_cache import etag_response
 
 
 def request_with(headers=()):

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from factor_backtest import run_factor_backtest
-from motto_core.config import ORIGINAL_UNIVERSE, ROOT
+from workbench_core.config import ORIGINAL_UNIVERSE, ROOT
 
 
 if __name__ == "__main__":

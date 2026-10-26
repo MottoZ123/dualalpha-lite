@@ -6,7 +6,7 @@ import xgboost as xgb
 import lightgbm as lgb
 import catboost as cb
 import joblib
-from motto_core.research_registry import resolve_active_model_dir
+from workbench_core.research_registry import resolve_active_model_dir
 import torch
 import torch.nn as nn
 import warnings

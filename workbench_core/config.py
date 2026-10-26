@@ -6,7 +6,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_CONFIG = ROOT / "motto-config.json"
+PUBLIC_CONFIG = ROOT / "workbench-config.json"
+if not PUBLIC_CONFIG.exists():
+    PUBLIC_CONFIG = ROOT / "motto-config.json"  # Legacy local configuration.
 
 
 @dataclass(frozen=True)
@@ -23,8 +25,8 @@ class Instrument:
 
 
 @dataclass(frozen=True)
-class MottoConfig:
-    name: str = "Motto Stock-Analysis"
+class WorkbenchConfig:
+    name: str = "本地工作台"
     timezone: str = "Asia/Shanghai"
     currency: str = "CNY"
     portfolio_mode: str = "none"
@@ -66,8 +68,8 @@ DEFAULT_ADDITIONS = (
 )
 
 
-def load_motto_config(path: Path = PUBLIC_CONFIG) -> MottoConfig:
-    base = MottoConfig(universe=ORIGINAL_UNIVERSE + DEFAULT_ADDITIONS)
+def load_workbench_config(path: Path = PUBLIC_CONFIG) -> WorkbenchConfig:
+    base = WorkbenchConfig(universe=ORIGINAL_UNIVERSE + DEFAULT_ADDITIONS)
     if not path.exists():
         return base
     raw = json.loads(path.read_text(encoding="utf-8"))
@@ -84,7 +86,7 @@ def load_motto_config(path: Path = PUBLIC_CONFIG) -> MottoConfig:
         ))
     merged = {item.code: item for item in ORIGINAL_UNIVERSE}
     merged.update({item.code: item for item in configured or DEFAULT_ADDITIONS})
-    return MottoConfig(
+    return WorkbenchConfig(
         portfolio_mode=raw.get("portfolio_mode", "none"),
         portfolio_interface_enabled=bool(raw.get("portfolio_interface_enabled", True)),
         vibe_enabled=bool(raw.get("vibe", {}).get("enabled", False)),

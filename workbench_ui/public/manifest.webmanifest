@@ -1,6 +1,6 @@
 {
-  "name": "Motto Stock-Analysis",
-  "short_name": "Motto Stock",
+  "name": "本地工作台",
+  "short_name": "本地工作台",
   "description": "个人投资工作台",
   "start_url": "/",
   "display": "standalone",

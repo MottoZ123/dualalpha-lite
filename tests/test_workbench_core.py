@@ -5,15 +5,15 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from motto_core.analytics import chart_indicators, comprehensive_top_observer, condition_matrix, macd, market_temperature, market_top_observer, rsi, technical_top_inputs, trend_assessment
-from motto_core.cache import SWRCache
-from motto_core.config import MottoConfig, ORIGINAL_UNIVERSE, load_motto_config
-from motto_core.contracts import finite_number
-from motto_core.providers import TencentMarketProvider
-from motto_core.research_registry import ResearchRegistry
-from motto_core.service import MottoService
-from motto_core.state import SignalStateStore
-from motto_core.market_clock import market_clock
+from workbench_core.analytics import chart_indicators, comprehensive_top_observer, condition_matrix, macd, market_temperature, market_top_observer, rsi, technical_top_inputs, trend_assessment
+from workbench_core.cache import SWRCache
+from workbench_core.config import WorkbenchConfig, ORIGINAL_UNIVERSE, load_workbench_config
+from workbench_core.contracts import finite_number
+from workbench_core.providers import TencentMarketProvider
+from workbench_core.research_registry import ResearchRegistry
+from workbench_core.service import WorkbenchService
+from workbench_core.state import SignalStateStore
+from workbench_core.market_clock import market_clock
 
 
 class FakeResponse:
@@ -36,7 +36,7 @@ class FakeSession:
         return FakeResponse()
 
 
-class MottoCoreTests(unittest.TestCase):
+class WorkbenchCoreTests(unittest.TestCase):
     def test_market_clock_handles_cn_trade_lunch_weekend_and_us_dst(self):
         trading = market_clock(datetime(2026, 8, 17, 2, 0, tzinfo=timezone.utc))
         lunch = market_clock(datetime(2026, 8, 17, 4, 0, tzinfo=timezone.utc))
@@ -60,14 +60,14 @@ class MottoCoreTests(unittest.TestCase):
         self.assertEqual(outside_coverage["calendarConfidence"], "weekday-session-only")
 
     def test_a_mode_has_no_holdings_but_reserves_interface(self):
-        service = MottoService(provider=TencentMarketProvider(session=FakeSession))
+        service = WorkbenchService(provider=TencentMarketProvider(session=FakeSession))
         caps = service.portfolio_capabilities()
         self.assertEqual(caps["mode"], "none")
         self.assertFalse(caps["enabled"])
         self.assertTrue(caps["interfaceReserved"])
 
     def test_original_universe_is_preserved(self):
-        config = load_motto_config()
+        config = load_workbench_config()
         expected = {item.code for item in ORIGINAL_UNIVERSE}
         actual = {item.code for item in config.universe}
         self.assertEqual(len(expected), 11)
@@ -107,7 +107,7 @@ class MottoCoreTests(unittest.TestCase):
         self.assertEqual(result["meta"]["source"], "tencent-market")
 
     def test_personal_stock_search_resolves_code_or_name_without_creating_holdings(self):
-        service = MottoService(provider=TencentMarketProvider(session=FakeSession))
+        service = WorkbenchService(provider=TencentMarketProvider(session=FakeSession))
         result = service.search_instruments("贵州茅台")
         matched = next(row for row in result["data"] if row["code"] == "600519")
         self.assertEqual(matched["name"], "贵州茅台")
@@ -149,7 +149,7 @@ class MottoCoreTests(unittest.TestCase):
 
     def test_complete_dashboard_package_is_cached_and_exposed_to_readiness(self):
         with tempfile.TemporaryDirectory() as directory:
-            service = MottoService(cache=SWRCache(directory), provider=TencentMarketProvider(session=FakeSession))
+            service = WorkbenchService(cache=SWRCache(directory), provider=TencentMarketProvider(session=FakeSession))
             builds = []
 
             def build_dashboard():
@@ -165,7 +165,7 @@ class MottoCoreTests(unittest.TestCase):
             self.assertEqual(service.ready()["critical"]["dashboard"], "ready")
 
     def test_partial_flow_rows_do_not_break_market_package(self):
-        service = MottoService(config=MottoConfig(universe=()), provider=TencentMarketProvider(session=FakeSession))
+        service = WorkbenchService(config=WorkbenchConfig(universe=()), provider=TencentMarketProvider(session=FakeSession))
         service.fund_flows = lambda _kind="industry": {"data": [{"mainNetInflow": None}, {"mainNetInflow": 10.0}], "meta": {"source": "fixture"}}
         service.market_snapshot = lambda: {"data": {"advancingRatio": 50.0}}
         service.valuations = lambda _codes=None: {"data": []}
@@ -176,7 +176,7 @@ class MottoCoreTests(unittest.TestCase):
     def test_cross_market_alignment_uses_strictly_prior_us_close(self):
         cn = [("2026-08-17", .01), ("2026-08-18", -.02)]
         us = [("2026-08-14", .03), ("2026-08-17", -.01), ("2026-08-18", .5)]
-        paired = MottoService._pair_prior_market(cn, us)
+        paired = WorkbenchService._pair_prior_market(cn, us)
         self.assertEqual(paired[0][2], "2026-08-14")
         self.assertEqual(paired[1][2], "2026-08-17")
         self.assertNotEqual(paired[1][2], "2026-08-18")

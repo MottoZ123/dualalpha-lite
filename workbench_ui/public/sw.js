@@ -1,4 +1,4 @@
-const CACHE = "motto-stock-analysis-v1";
+const CACHE = "local-workbench-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {

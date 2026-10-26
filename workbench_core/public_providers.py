@@ -241,7 +241,7 @@ class InstitutionalMacroProvider:
         self.session, self.timeout = session, timeout
 
     def _latest_csv(self, url: str, value_column: str):
-        response = self.session.get(url, headers={"User-Agent": "Motto Stock-Analysis/1.0"}, timeout=self.timeout)
+        response = self.session.get(url, headers={"User-Agent": "LocalWorkbench/1.0"}, timeout=self.timeout)
         response.raise_for_status()
         rows = list(csv.DictReader(io.StringIO(response.text)))
         for row in reversed(rows):
@@ -251,7 +251,7 @@ class InstitutionalMacroProvider:
         raise ProviderError(f"No finite observations for {value_column}")
 
     def fred_series(self, code: str):
-        response = self.session.get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={code}", headers={"User-Agent": "Motto Stock-Analysis/1.0"}, timeout=self.timeout)
+        response = self.session.get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={code}", headers={"User-Agent": "LocalWorkbench/1.0"}, timeout=self.timeout)
         response.raise_for_status()
         rows = []
         for row in csv.DictReader(io.StringIO(response.text)):
@@ -295,7 +295,7 @@ class InstitutionalMacroProvider:
     def buffett_history(self):
         url = "https://api.worldbank.org/v2/country/CHN/indicator/CM.MKT.LCAP.GD.ZS"
         try:
-            response = self.session.get(url, params={"format": "json", "per_page": 100}, headers={"User-Agent": "Motto Stock-Analysis/1.0"}, timeout=self.timeout)
+            response = self.session.get(url, params={"format": "json", "per_page": 100}, headers={"User-Agent": "LocalWorkbench/1.0"}, timeout=self.timeout)
             response.raise_for_status()
             payload = response.json()
         except (requests.RequestException, ValueError) as exc:
@@ -401,7 +401,7 @@ class CmeOfficialFuturesProvider:
         if not self.endpoint or not self.api_key:
             raise ProviderError("CME official API subscription is not configured")
         try:
-            response = self.session.get(self.endpoint, params={"symbols": "ES,NQ,YM"}, headers={"Authorization": f"Bearer {self.api_key}", "Accept": "application/json", "User-Agent": "Motto Stock-Analysis/1.0"}, timeout=self.timeout)
+            response = self.session.get(self.endpoint, params={"symbols": "ES,NQ,YM"}, headers={"Authorization": f"Bearer {self.api_key}", "Accept": "application/json", "User-Agent": "LocalWorkbench/1.0"}, timeout=self.timeout)
             response.raise_for_status()
             payload = response.json()
         except (requests.RequestException, ValueError) as exc:

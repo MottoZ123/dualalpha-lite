@@ -9,7 +9,7 @@ import {
   type ResearchWorkspace,
   type StockItem,
 } from "../../lib/workspace";
-import styles from "./MottoStockAnalysis.module.css";
+import styles from "./LocalWorkbench.module.css";
 
 type View = "market" | "desk" | "research" | "reference";
 type ResearchTab = "signals" | "dual" | "factors" | "backtest" | "models";
@@ -615,7 +615,7 @@ function maskApiKey(value: string) {
     : "••••••••";
 }
 
-export function MottoStockAnalysis() {
+export function LocalWorkbench() {
   const [view, setView] = useState<View>("market");
   const [researchTab, setResearchTab] = useState<ResearchTab>("signals");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -711,7 +711,7 @@ export function MottoStockAnalysis() {
       }
       if (!executorBase)
         throw new Error(
-          "尚未连接 Motto Research Core；页面不会用示例行情填充空位",
+          "尚未连接 本地研究服务；页面不会用示例行情填充空位",
         );
       const response = await fetch("/api/cloud/rich/context", {
         method: "POST",
@@ -1075,7 +1075,7 @@ export function MottoStockAnalysis() {
       ...workspace,
       executor: {
         ...workspace.executor,
-        label: "Motto Research Core",
+        label: "本地研究服务",
         baseUrl: executorBase,
       },
       updatedAt: new Date().toISOString(),
@@ -1121,10 +1121,10 @@ export function MottoStockAnalysis() {
           }}
           aria-label="返回市场总览"
         >
-          <span className={styles.brandMark}>M</span>
+          <span className={styles.brandMark}>研</span>
           <span>
-            <b>Motto</b>
-            <small>STOCK-ANALYSIS</small>
+            <b>本地工作台</b>
+            <small>LOCAL RESEARCH</small>
           </span>
         </button>
         <nav className={styles.nav} aria-label="主导航">

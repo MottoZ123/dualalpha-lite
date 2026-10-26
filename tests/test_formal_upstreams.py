@@ -3,8 +3,8 @@ import json
 import tempfile
 from pathlib import Path
 
-from motto_core.config import load_motto_config
-from motto_core.public_providers import CmeOfficialFuturesProvider, EastMoneyProvider, InstitutionalMacroProvider, OfficialExchangeLimitProvider, SinaGlobalFuturesProvider, SseInvestorAccountsProvider
+from workbench_core.config import load_workbench_config
+from workbench_core.public_providers import CmeOfficialFuturesProvider, EastMoneyProvider, InstitutionalMacroProvider, OfficialExchangeLimitProvider, SinaGlobalFuturesProvider, SseInvestorAccountsProvider
 
 
 class Response:
@@ -87,7 +87,7 @@ class FormalUpstreamTests(unittest.TestCase):
         self.assertEqual(result["meta"]["source_type"], "commercial-public-interface")
 
     def test_fund_benchmark_comes_from_public_config(self):
-        fund = next(item for item in load_motto_config().universe if item.code == "161725")
+        fund = next(item for item in load_workbench_config().universe if item.code == "161725")
         self.assertEqual(fund.benchmark_code, "H30539")
         self.assertIn("95%", fund.benchmark_formula)
 

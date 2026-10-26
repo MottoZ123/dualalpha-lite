@@ -25,7 +25,7 @@ if (-not $resolvedLock.StartsWith([System.IO.Path]::GetFullPath($projectRoot), [
 try {
     $lock = [System.IO.File]::Open($resolvedLock, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::Read)
 } catch {
-    throw "Motto Research Core already has an active local instance (lock: $resolvedLock)"
+    throw "本地研究服务 already has an active local instance (lock: $resolvedLock)"
 }
 try {
     Set-Location -LiteralPath $projectRoot

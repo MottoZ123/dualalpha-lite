@@ -1,3 +1,3 @@
 "use client";
-import { MottoStockAnalysis } from "./_components/MottoStockAnalysis";
-export default function Home() { return <MottoStockAnalysis />; }
+import { LocalWorkbench } from "./_components/LocalWorkbench";
+export default function Home() { return <LocalWorkbench />; }

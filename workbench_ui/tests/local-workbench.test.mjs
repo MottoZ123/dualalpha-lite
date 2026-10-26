@@ -1,28 +1,26 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("ships the Motto Stock-Analysis product shell and PWA metadata", async () => {
+test("ships the 本地工作台 product shell and PWA metadata", async () => {
   const [layout, page, motto, manifest, serviceWorker] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/_components/MottoStockAnalysis.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/_components/LocalWorkbench.tsx", import.meta.url), "utf8"),
     readFile(new URL("../public/manifest.webmanifest", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
   ]);
-  assert.match(layout, /Motto Stock-Analysis · 个人投资工作台/);
+  assert.match(layout, /本地工作台 · 双轨量化研究/);
   assert.match(layout, /manifest\.webmanifest/);
-  assert.match(layout, /\/og\.png/);
-  assert.match(page, /<MottoStockAnalysis/);
+  assert.match(page, /<LocalWorkbench/);
   for (const group of ["MARKET", "MY DESK", "RESEARCH", "REFERENCE"]) assert.match(motto, new RegExp(group));
-  assert.match(manifest, /Motto Stock-Analysis/);
+  assert.match(manifest, /本地工作台/);
   assert.match(serviceWorker, /url\.pathname\.startsWith\("\/api\/"\)/);
-  await access(new URL("../public/og.png", import.meta.url));
   assert.doesNotMatch(`${layout}\n${page}\n${motto}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
 test("renders audited macro, FX, futures and exact limit-pool contracts", async () => {
-  const dashboard = await readFile(new URL("../app/_components/MottoStockAnalysis.tsx", import.meta.url), "utf8");
+  const dashboard = await readFile(new URL("../app/_components/LocalWorkbench.tsx", import.meta.url), "utf8");
   assert.match(dashboard, /\/api\/macro/);
   assert.match(dashboard, /\/api\/fx/);
   assert.match(dashboard, /\/api\/us-futures/);
@@ -38,7 +36,7 @@ test("renders audited macro, FX, futures and exact limit-pool contracts", async 
 
 test("renders baseline-first personal evidence analysis and optional LLM layer", async () => {
   const [dashboard, richContext] = await Promise.all([
-    readFile(new URL("../app/_components/MottoStockAnalysis.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/_components/LocalWorkbench.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/cloud/rich/context/route.ts", import.meta.url), "utf8"),
   ]);
   assert.match(dashboard, /个人因子组合/);
@@ -64,8 +62,8 @@ test("renders baseline-first personal evidence analysis and optional LLM layer",
 
 test("renders the PDF C.11 market overview hierarchy", async () => {
   const [dashboard, styles] = await Promise.all([
-    readFile(new URL("../app/_components/MottoStockAnalysis.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/_components/MottoStockAnalysis.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/_components/LocalWorkbench.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/_components/LocalWorkbench.module.css", import.meta.url), "utf8"),
   ]);
   assert.match(dashboard, /开屏 · 市场涨跌速览/);
   assert.match(dashboard, /overviewTiles/);

@@ -14,7 +14,7 @@ import catboost as cb
 import joblib
 import torch
 import torch.nn as nn
-from motto_core.research_registry import resolve_active_model_dir
+from workbench_core.research_registry import resolve_active_model_dir
 from llm_DeepSeek_tx import ask_ai_agent
 
 warnings.filterwarnings('ignore')
