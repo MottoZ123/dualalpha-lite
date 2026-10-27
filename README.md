@@ -2,7 +2,7 @@
 
 面向 A 股的本地研究工作台，把市场观察、自选股管理、因子设计、策略研究、历史回测和模型报告放在同一个研究流程中。内置原有 TX / BS 双轨预测系统作为可研究、可修改的示例：TX 侧重价格趋势与形态，BS 侧重量价、成交成本与流动性；用户可以选择内置因子、调整研究组合，或通过安全公式定义新因子。
 
-项目由用户原有的因子挖掘、机器学习模型构建与双轨预测系统演进而来，工作台负责组织数据、实验与结果。GitHub 仓库地址继续使用 `dualalpha-lite`，项目展示名称为“股票因子研究工作台”。
+工作台围绕因子挖掘、机器学习建模与 TX/BS 双轨预测，统一组织数据、实验和结果。
 
 ## 功能与界面
 
@@ -17,11 +17,11 @@
 
 ![市场总览](docs/images/market.png)
 
-*市场页面：指数、板块、分时走势与数据状态。截图来自实际本地运行，保留截图时的“本地工作台”名称。*
+*市场页面：指数、板块、分时走势与数据状态。*
 
 ![因子实验室](docs/images/research.png)
 
-*研究页面：内置因子目录与组合选择。截图未导入个人权重或账户，展示界面功能而非策略收益。*
+*研究页面：内置因子目录与组合选择。*
 
 ## 整体架构
 
@@ -77,7 +77,7 @@ flowchart LR
 
 ### 1. 建立候选股票池
 
-从“市场”查看板块与指数，再在“我的”维护关注标的。选股在这里指**建立研究股票池并比较候选结果**：市场观察、自选管理与模型分数可以提供筛选线索，当前没有一键全市场扫描并自动下单的流程。
+从“市场”查看板块与指数，再在“我的”维护关注标的，结合市场信息和模型分数建立研究股票池、比较候选结果。
 
 进入研究模块后输入六位 A 股代码并做历史数据预检。`POST /api/universe/validate` 接受 1–50 个代码；因子回测至少需要 3 只有足够历史数据的股票，每只至少 120 行。正式横截面研究宜使用更宽的股票池，以免少数样本决定排名。先固定股票池与数据日期，再比较策略，记录退市、停牌、复权和样本选择方式。
 
@@ -107,7 +107,7 @@ $$S_{i,t}=\sum_j w_j d_j\frac{x_{i,j,t}-\mu_{j,t}}{\sigma_{j,t}}$$
 
 ### 4. 运行历史回测
 
-页面“训练回测”目前读取已存在的历史案例，执行按钮保持关闭。新实验可在安装完整模型依赖后调用研究函数；以下为**可执行示例配置，不是预先取得的收益结果**。在仓库根目录运行：
+页面“训练回测”目前读取已存在的历史案例，执行按钮保持关闭。新实验可在安装完整模型依赖后调用研究函数；以下示例展示回测配置与调用方式。在仓库根目录运行：
 
 ```python
 from quant.factor_backtest import run_factor_backtest
@@ -233,7 +233,7 @@ $$w_k=\frac{|\beta_k|}{\sum_j|\beta_j|+\epsilon},\qquad raw\_prob=\sum_{k=1}^{4}
 
 ### 复现时必须核对的实现边界
 
-以下是阅读当前源码得到的检查项；本次文档更新没有改变原始算法，也未重新训练权重。
+复现模型时，重点检查以下数据处理与训练、推理一致性问题。
 
 - 主板训练将全样本拟合的 scaler 保存，但树模型仍使用此前训练段 scaler 产生的矩阵重拟合；训练与推理变换存在不一致，需要统一后重新训练。
 - 主板 `PctChg` 采用“最大绝对值大于 10 才除以 100”的启发式；腾讯字段缺失时还会填 0。须验证涨跌幅列与基准同为小数收益，否则标签失真。
@@ -370,7 +370,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_backend.ps1
 
 | 现象 | 检查 |
 |---|---|
-| health 成功、ready 为 503 | 数据预热、上游网络、缓存过期；不要伪造就绪状态 |
+| health 成功、ready 为 503 | 数据预热进度、上游网络与缓存有效期 |
 | 页面没有行情 | 8910 是否启动、界面连接地址、Origin、数据源返回 |
 | 双轨没有结果 | 是否已有四套权重、日报生成成功、报告读取路径正确 |
 | 模型不存在/无权限 | 供应商账户实际模型名、Endpoint、Key 和网络 |
@@ -382,7 +382,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_backend.ps1
 
 ## 验证与协作
 
-上一轮源码整理已通过 43 项后端测试、4 项前端测试和前端构建，市场与因子页面已实际连接后端。此次更新聚焦项目命名与说明，没有产生新的模型收益结论。
+已有验证记录包括 43 项后端测试、4 项前端测试、前端构建，以及市场与因子页面连接后端的检查。
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
@@ -391,4 +391,4 @@ pnpm run build
 node --test tests/local-workbench.test.mjs
 ```
 
-维护：[MottoZ123](https://github.com/MottoZ123)；共同开发：[Mary-wym](https://github.com/Mary-wym)。可选 [Vibe-Research](https://github.com/simonlin1212/Vibe-Research) 适配默认关闭。依赖见 requirements 文件与前端 package.json；原项目尚未提供根 LICENSE。
+主要作者：[Mary-wym](https://github.com/Mary-wym)；共同作者：[MottoZ123](https://github.com/MottoZ123)。可选 [Vibe-Research](https://github.com/simonlin1212/Vibe-Research) 适配默认关闭。依赖见 requirements 文件与前端 package.json；原项目尚未提供根 LICENSE。
